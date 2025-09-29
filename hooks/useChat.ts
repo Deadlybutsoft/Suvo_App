@@ -1,0 +1,679 @@
+"use client"
+
+import type React from "react"
+
+import { useState, useCallback, useRef } from "react"
+import type { Message, AiStatus, FileSystem, FileChange, FileData, AiModel } from "../types"
+import { GoogleGenAI, type Content, type Part } from "@google/genai"
+import OpenAI from "openai"
+import type { ChatCompletionMessageParam } from "openai/resources/chat/completions"
+
+const AI_SYSTEM_PROMPT = `You are "Suvo," an AI expert specializing in web development. Your main instruction is to use a **Vite-based stack with React, TypeScript, and Tailwind CSS** to build applications. You are an expert web developer and UI/UX designer, focused on creating clean, functional, and beautiful self-contained, single-page web experiences.
+
+### Core Mandate: Scalable File Structure
+
+You **MUST** adhere to the following scalable and reliable Vite project structure for all web applications. Do not deviate.
+
+project-root/
+├── public/                     # Static assets (images, favicon) - place user-uploaded images here.
+├── src/
+│   ├── components/             # Reusable UI components
+│   │   ├── ui/                 # Atomic design: Button, Input, Card, etc.
+│   │   └── layout/             # Larger structures: Navbar, Sidebar, Footer.
+│   ├── pages/                  # Route-level components (e.g., Home.tsx, About.tsx)
+│   ├── hooks/                  # Custom React hooks (e.g., useApi.ts)
+│   ├── lib/                    # Utilities, helpers, constants (e.g., utils.ts)
+│   ├── styles/                 # Global styles, Tailwind base configurations.
+│   │   └── globals.css         # Main global stylesheet.
+│   ├── types/                  # TypeScript type definitions.
+│   │   └── index.ts            # Main types file.
+│   ├── App.tsx                 # Root application component, routing logic.
+│   └── main.tsx                # Application entry point (renders App.tsx).
+├── index.html                  # Main HTML shell.
+├── package.json                # Project dependencies and scripts.
+├── tailwind.config.js          # Tailwind CSS configuration.
+├── postcss.config.js           # PostCSS configuration.
+├── tsconfig.json               # TypeScript configuration.
+└── vite.config.ts              # Vite build configuration.
+
+### Core Philosophy:
+
+1.  **Modern Stack & Completeness**: You build complete, working prototypes using a modern frontend stack based on Vite principles.
+    *   **React & TypeScript**: The main entry point is \`src/main.tsx\`. The root component is \`src/App.tsx\`. All imports from external packages in \`.tsx\` files **must use standard bare module specifiers**, e.g., \`import React from 'react';\`. Dependencies are managed in \`package.json\`.
+    *   **Preview Environment & Dependencies**: The live preview environment can automatically resolve the following external libraries: \`react\`, \`react-dom\`, and \`react-router-dom\`. For any other external libraries (e.g., charting libraries, utility libraries), the live preview may fail. Stick to these supported libraries for maximum compatibility.
+    *   **Tailwind CSS**: All styling must be done with Tailwind CSS. A \`src/styles/globals.css\` should be set up for base styles and imported into \`src/main.tsx\`. The \`tailwind.config.js\` and \`postcss.config.js\` files must be configured correctly.
+    *   **File Organization**: Strictly follow the structure outlined in the "Core Mandate". Place components, pages, hooks, etc., in their designated directories.
+
+2.  **Proactive Design & Aesthetics**: This is your most important directive. You must build with extreme precision and a keen eye for modern, beautiful design.
+    *   **Default Design Language**: By default, blend the design principles of **Vercel** (minimalist, clean, sharp corners, excellent typography) and **Apple** (generous spacing, intuitive layouts, high-quality iconography). When a user mentions a theme (e.g., "retro," "playful"), adapt your design to that style while maintaining high-quality design standards.
+    *   **Build Complete Components**: Infer user intent and build what they *mean*, not just what they say. A "login form" implies labels, styled inputs, validation feedback, a submit button, and proper accessibility. Always build complete, aesthetically pleasing components.
+    *   **Technical Excellence**: Use modern layouts (Flexbox, Grid), harmonious and accessible color palettes, excellent fonts (like 'Inter' or a suitable alternative), and subtle, interactive elements (hover effects, transitions).
+
+3.  **Accessibility First**: All generated code must be accessible. Use semantic HTML in your components, provide \`alt\` text for images, associate labels with form controls, and use ARIA attributes when necessary.
+
+4.  **Clean Code**:
+    *   **HTML**: Write a minimal, clean HTML5 shell in \`index.html\`. It should include a root element (\`<div id="root"></div>\`) and a module script tag to load \`/src/main.tsx\`.
+    *   **TypeScript/React**: Write clean, modern React code with TypeScript. Use functional components and hooks.
+    *   **Configuration**: Always create the necessary config files (\`vite.config.ts\`, \`tsconfig.json\`, \`tailwind.config.js\`, \`postcss.config.js\`, \`package.json\`).
+    *   **Quote Handling**: Pay close attention to quotes in generated code. In JSX, if a string attribute contains an apostrophe (e.g., "What's on your mind?"), you **MUST** enclose the attribute value in double quotes (\`placeholder="What's on your mind?"\`). Using single quotes in this case (\`placeholder='What's on your mind?'\`) will cause a syntax error. Always produce syntactically correct code.
+
+5.  **Image Handling**:
+    *   **User Image Upload Workflow**:
+        1.  Acknowledge image receipt.
+        2.  Create the image file in the \`public/\` directory (e.g., \`public/user-upload.png\`) using a \`CREATE\` operation.
+        3.  The \`content\` for this operation **MUST** be the exact placeholder string: \`[USE_UPLOADED_IMAGE]\`. The system will replace this.
+        4.  Update the code (e.g., in a component in \`src/components/\`) to use this new image via its root-relative path (e.g., \`<img src="/user-upload.png" ... />\`).
+
+### Responding to Edits and Iteration
+
+When a user asks you to change something, you will be provided with the complete current file system state. Your primary goal is to **make incremental and targeted changes** to the existing files.
+
+-   **Analyze the Context**: Before writing any code, carefully review the provided file system content to understand the current state of the application.
+-   **Modify, Don't Replace**: Instead of rewriting entire files from scratch, identify the specific lines or sections that need to be changed and apply updates only where necessary.
+-   **Preserve Existing Logic**: Respect the user's previous work. If a file contains logic or components not related to the current request, you must preserve them.
+-   **Be Consistent**: Maintain the existing coding style, component structure, and design patterns present in the files. The goal is to evolve the application, not to create a completely different one with every prompt.
+-   **Use \`UPDATE\`**: For modifications to existing files, use the \`UPDATE\` operation. Use \`CREATE\` for new files and \`DELETE\` for removing files.
+
+### STRICT RESPONSE FORMAT
+
+Your response MUST be in two parts, separated by the \`[CODE_CHANGES]\` block.
+
+**Part 1: Conversational Text**
+- This comes FIRST. Contains your friendly explanation.
+- **ABSOLUTELY NO CODE SNIPPETS OR FILE CONTENTS HERE.**
+
+**Part 2: Code Block**
+- This comes SECOND, starting with \`[CODE_CHANGES]\` and ending with \`[CODE_CHANGES_END]\`.
+- Inside is a single, valid JSON object with a "files" array.
+- Each object in the array must have "operation", "path", and a user-friendly "description".
+- For "CREATE" or "UPDATE", you MUST include a "content" field with the complete, properly escaped source code as a string.
+
+---
+### EXAMPLE of a PERFECT response:
+
+Of course! I'll build a simple counter application using React and Tailwind CSS, following the standard project structure.
+
+I'll start by setting up all the necessary configuration files (\`vite.config.ts\`, \`tsconfig.json\`, etc.) and a basic \`package.json\`. Then, I'll create the main HTML shell, the application entry point in \`src/main.tsx\`, and the root \`App\` component. The counter itself will be a separate component in \`src/components/ui/Counter.tsx\` to demonstrate proper modularization.
+
+[CODE_CHANGES]
+{
+  "files": [
+    {
+      "operation": "UPDATE",
+      "path": "index.html",
+      "description": "Updates the HTML host page to load the React application from src/main.tsx.",
+      "content": "<!DOCTYPE html>\\n<html lang=\\"en\\">\\n<head>\\n  <meta charset=\\"UTF-8\\">\\n  <meta name=\\"viewport\\" content=\\"width=device-width, initial-scale=1.0\\">\\n  <title>React Counter</title>\\n</head>\\n<body>\\n  <div id=\\"root\\"></div>\\n  <script type=\\"module\\" src=\\"/src/main.tsx\\"></script>\\n</body>\\n</html>"
+    },
+    {
+      "operation": "CREATE",
+      "path": "src/main.tsx",
+      "description": "Creates the application entry point, imports global styles, and renders the App component.",
+      "content": "import React from 'react';\\nimport ReactDOM from 'react-dom/client';\\nimport App from './App.tsx';\\nimport './styles/globals.css';\\n\\nReactDOM.createRoot(document.getElementById('root')!).render(\\n  <React.StrictMode>\\n    <App />\\n  </React.StrictMode>\\n);"
+    },
+    {
+      "operation": "CREATE",
+      "path": "src/App.tsx",
+      "description": "Creates the root App component that will host the counter.",
+      "content": "import React from 'react';\\nimport Counter from './components/ui/Counter.tsx';\\n\\nfunction App() {\\n  return (\\n    <div className=\\"min-h-screen bg-slate-900 text-white flex items-center justify-center\\">\\n      <Counter />\\n    </div>\\n  );\\n}\\n\\nexport default App;"
+    },
+    {
+      "operation": "CREATE",
+      "path": "src/components/ui/Counter.tsx",
+      "description": "Creates the modular Counter component with its own state and logic.",
+      "content": "import React, { useState } from 'react';\\n\\nconst Counter = () => {\\n  const [count, setCount] = useState(0);\\n\\n  return (\\n    <div className=\\"bg-slate-800 p-8 rounded-lg shadow-lg text-center\\">\\n      <h1 className=\\"text-4xl font-bold text-white\\">Counter</h1>\\n      <span className=\\"text-7xl font-bold text-sky-400 my-6 block\\">{count}</span>\\n      <div className=\\"flex space-x-4\\">\\n        <button onClick={() => setCount(count - 1)} className=\\"px-6 py-2 bg-slate-700 text-white rounded-md text-2xl font-bold hover:bg-slate-600 transition-colors\\">-</button>\\n        <button onClick={() => setCount(count + 1)} className=\\"px-6 py-2 bg-sky-500 text-white rounded-md text-2xl font-bold hover:bg-sky-400 transition-colors\\">+</button>\\n      </div>\\n    </div>\\n  );\\n};\\n\\nexport default Counter;"
+    },
+    {
+      "operation": "CREATE",
+      "path": "src/styles/globals.css",
+      "description": "Sets up the base Tailwind CSS directives (for build process).",
+      "content": "@tailwind base;\\n@tailwind components;\\n@tailwind utilities;"
+    },
+    {
+      "operation": "CREATE",
+      "path": "package.json",
+      "description": "Creates a basic package.json file for the project.",
+      "content": "{\\n  \\"name\\": \\"vite-project\\",\\n  \\"private\\": true,\\n  \\"version\\": \\"0.0.0\\",\\n  \\"type\\": \\"module\\",\\n  \\"scripts\\": {\\n    \\"dev\\": \\"vite\\",\\n    \\"build\\": \\"tsc && vite build\\",\\n    \\"preview\\": \\"vite preview\\"\\n  }\\n}"
+    },
+    {
+      "operation": "CREATE",
+      "path": "vite.config.ts",
+      "description": "Creates the Vite configuration file.",
+      "content": "import { defineConfig } from 'vite'\\nimport react from '@vitejs/plugin-react'\\n\\n// https://vitejs.dev/config/\\nexport default defineConfig({\\n  plugins: [react()],\\n})"
+    },
+    {
+      "operation": "CREATE",
+      "path": "tsconfig.json",
+      "description": "Creates the TypeScript configuration file.",
+      "content": "{\\n  \\"compilerOptions\\": {\\n    \\"target\\": \\"ESNext\\",\\n    \\"useDefineForClassFields\\": true,\\n    \\"lib\\": [\\"DOM\\", \\"DOM.Iterable\\", \\"ESNext\\"],\\n    \\"allowJs\\": false,\\n    \\"skipLibCheck\\": true,\\n    \\"esModuleInterop\\": false,\\n    \\"allowSyntheticDefaultImports\\": true,\\n    \\"strict\\": true,\\n    \\"forceConsistentCasingInFileNames\\": true,\\n    \\"module\\": \\"ESNext\\",\\n    \\"moduleResolution\\": \\"Node\\",\\n    \\"resolveJsonModule\\": true,\\n    \\"isolatedModules\\": true,\\n    \\"noEmit\\": true,\\n    \\"jsx\\": \\"react-jsx\\"\\n  },\\n  \\"include\\": [\\"src\\"],\\n  \\"references\\": [{ \\"path\\": \\"./tsconfig.node.json\\" }]\\n}"
+    },
+    {
+      "operation": "CREATE",
+      "path": "tailwind.config.js",
+      "description": "Configures Tailwind CSS to scan source files.",
+      "content": "/** @type {import('tailwindcss').Config} */\\nexport default {\\n  content: [\\n    \\"./index.html\\",\\n    \\"./src/**/*.{js,ts,jsx,tsx}\\",\\n  ],\\n  theme: {\\n    extend: {},\\n  },\\n  plugins: [],\\n}"
+    },
+    {
+      "operation": "CREATE",
+      "path": "postcss.config.js",
+      "description": "Sets up PostCSS with Tailwind CSS and Autoprefixer.",
+      "content": "export default {\\n  plugins: {\\n    tailwindcss: {},\\n    autoprefixer: {},\\n  },\\n}"
+    }
+  ]
+}
+[CODE_CHANGES_END]
+---
+Now, analyze the user's request and the current file system. Generate your response following these strict instructions.
+`
+
+const convertImageToBase64 = (imageFile: File): Promise<{ data: string; mimeType: string }> => {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader()
+    reader.onloadend = () => {
+      if (typeof reader.result !== "string") {
+        return reject(new Error("Failed to read file as data URL."))
+      }
+      const base64Data = reader.result.split(",")[1]
+      if (!base64Data) {
+        return reject(new Error("Could not extract base64 data from file."))
+      }
+      resolve({ data: base64Data, mimeType: imageFile.type })
+    }
+    reader.onerror = (error) => reject(error)
+    reader.readAsDataURL(imageFile)
+  })
+}
+
+const isQuotaError = (error: any): boolean => {
+  try {
+    if (error?.error?.code === 429) {
+      return true
+    }
+    let errorJsonString = ""
+    if (error instanceof Error) {
+      errorJsonString = error.message
+    } else if (typeof error === "string") {
+      errorJsonString = error
+    } else if (typeof error === "object" && error !== null) {
+      errorJsonString = JSON.stringify(error)
+    }
+    const jsonMatch = errorJsonString.match(/{.*}/s)
+    if (jsonMatch) {
+      const parsedError = JSON.parse(jsonMatch[0])
+      if (parsedError?.error?.code === 429) {
+        return true
+      }
+    }
+  } catch (e) {
+    /* Ignore parsing errors */
+  }
+  return false
+}
+
+const getFriendlyErrorMessage = (error: any, context: 'api' | 'parsing'): string => {
+    if (context === 'parsing') {
+        console.error("Parsing error details:", error);
+        return "I had a little trouble formatting the code changes. Please review the code, as it might be incomplete. If something looks wrong, you can ask me to try again.";
+    }
+
+    if (isQuotaError(error)) {
+        return "It looks like you've reached your usage limit for the AI model. Please check your plan and billing details.";
+    }
+
+    const errorString = (error instanceof Error ? error.message : String(error)).toLowerCase();
+
+    if (errorString.includes('api key') || errorString.includes('401')) {
+        return "The API key seems to be invalid or missing. Please check your settings and make sure you have a valid key for the selected model.";
+    }
+
+    if (errorString.includes('failed to fetch') || errorString.includes('network')) {
+        return "I couldn't connect to the AI service. Please check your internet connection and try again.";
+    }
+    
+    // Default fallback
+    console.error("Unhandled API error:", error);
+    return "Something went wrong on my end. I've logged the issue. Please try your request again in a moment.";
+};
+
+const applyCodeChanges = (
+  changes: FileChange[],
+  setFileSystem: React.Dispatch<React.SetStateAction<FileSystem>>,
+  lastUploadedImage: { data: string; mimeType: string } | null,
+  clearLastUploadedImage: () => void,
+) => {
+  setFileSystem((currentFs) => {
+    const newFs = { ...currentFs }
+    const changesToApply: { path: string; operation: FileChange["operation"]; fileData?: FileData }[] = []
+    let imageUsed = false
+
+    for (const change of changes) {
+      if (change.operation === "CREATE" || change.operation === "UPDATE") {
+        if (typeof change.content === "string") {
+          let fileData: FileData
+          if (change.content === "[USE_UPLOADED_IMAGE]") {
+            if (lastUploadedImage) {
+              fileData = {
+                content: lastUploadedImage.data,
+                type: lastUploadedImage.mimeType,
+                isBinary: true,
+              }
+              imageUsed = true
+            } else {
+              console.warn(
+                `AI requested an image with [USE_UPLOADED_IMAGE] but no image was available for path: ${change.path}`,
+              )
+              continue // Skip this change if the image is missing
+            }
+          } else {
+            const extension = change.path.split(".").pop() || "tsx"
+            fileData = {
+              content: change.content,
+              type: extension,
+              isBinary: false,
+            }
+          }
+          changesToApply.push({ path: change.path, operation: change.operation, fileData })
+        }
+      } else if (change.operation === "DELETE") {
+        changesToApply.push({ path: change.path, operation: "DELETE" })
+      }
+    }
+
+    if (changesToApply.length > 0) {
+      changesToApply.forEach((change) => {
+        if ((change.operation === "CREATE" || change.operation === "UPDATE") && change.fileData) {
+          newFs[change.path] = change.fileData
+        } else if (change.operation === "DELETE") {
+          if (newFs[change.path]) {
+            delete newFs[change.path]
+          }
+        }
+      })
+    }
+
+    if (imageUsed) {
+      clearLastUploadedImage()
+    }
+    
+    return newFs
+  })
+}
+
+const parseStreamedCodeChanges = (fullResponseText: string): FileChange[] | null => {
+  const codeBlockRegex = /\[CODE_CHANGES\]([\s\S]*)/
+  const match = fullResponseText.match(codeBlockRegex)
+
+  if (!match || !match[1]) return null
+
+  const codeJsonStr = match[1].trim()
+  if (!codeJsonStr.startsWith('{"files":[')) return null
+
+  const filesStr = codeJsonStr.substring('{"files":['.length)
+
+  let braceDepth = 0
+  let inString = false
+  let lastValidSliceIndex = -1
+
+  for (let i = 0; i < filesStr.length; i++) {
+    const char = filesStr[i]
+
+    if (char === '"') {
+      let slashCount = 0
+      for (let j = i - 1; j >= 0; j--) {
+        if (filesStr[j] === "\\") {
+          slashCount++
+        } else {
+          break
+        }
+      }
+      if (slashCount % 2 === 0) {
+        inString = !inString
+      }
+    }
+
+    if (inString) continue
+
+    switch (char) {
+      case "{":
+        braceDepth++
+        break
+      case "}":
+        braceDepth--
+        if (braceDepth === 0) {
+          lastValidSliceIndex = i + 1
+        }
+        break
+    }
+  }
+
+  if (lastValidSliceIndex === -1) {
+    return null
+  }
+
+  let parsablePart = filesStr.substring(0, lastValidSliceIndex)
+
+  parsablePart = parsablePart.trim()
+  if (parsablePart.endsWith(",")) {
+    parsablePart = parsablePart.slice(0, -1)
+  }
+
+  const jsonArrayToParse = `[${parsablePart}]`
+
+  try {
+    const parsed = JSON.parse(jsonArrayToParse)
+    if (Array.isArray(parsed)) {
+      return parsed
+    }
+    return null
+  } catch (e) {
+    return null
+  }
+}
+
+const finalParseCodeChanges = (fullResponseText: string): { changes: FileChange[]; error: string | null } => {
+  const codeBlockRegex = /\[CODE_CHANGES\]([\s\S]*?)\[CODE_CHANGES_END\]/
+  const match = fullResponseText.match(codeBlockRegex)
+
+  if (!match || !match[1]) {
+    return { changes: [], error: null }
+  }
+
+  let codeJsonStr = match[1].trim()
+
+  const fenceRegex = /^```(\w*)?\s*\n?(.*?)\n?\s*```$/s
+  const fenceMatch = codeJsonStr.match(fenceRegex)
+  if (fenceMatch && fenceMatch[2]) {
+    codeJsonStr = fenceMatch[2].trim()
+  }
+
+  const firstBrace = codeJsonStr.indexOf("{")
+  const lastBrace = codeJsonStr.lastIndexOf("}")
+
+  if (firstBrace === -1 || lastBrace === -1 || lastBrace < firstBrace) {
+    return { changes: [], error: "Could not find a valid JSON object within the code block." }
+  }
+
+  codeJsonStr = codeJsonStr.substring(firstBrace, lastBrace + 1)
+
+  try {
+    const parsedCode = JSON.parse(codeJsonStr)
+    if (!parsedCode.files || !Array.isArray(parsedCode.files)) {
+      return { changes: [], error: "Invalid format: 'files' array not found in AI response." }
+    }
+    return { changes: parsedCode.files, error: null }
+  } catch (e) {
+    // Attempt to recover from a common AI error: invalid escape sequences
+    if (e instanceof SyntaxError && e.message.includes("Bad escaped character")) {
+      try {
+        // This regex removes backslashes that are not part of a valid JSON escape sequence.
+        const sanitizedJsonStr = codeJsonStr.replace(/\\(?!["\\/bfnrt]|u[0-9a-fA-F]{4})/g, "")
+        const parsedCode = JSON.parse(sanitizedJsonStr)
+        if (parsedCode.files && Array.isArray(parsedCode.files)) {
+          return { changes: parsedCode.files, error: null }
+        }
+      } catch (e2) {
+        console.error("JSON sanitization failed:", e2)
+      }
+    }
+
+    const errorMessage = e instanceof Error ? e.message : String(e)
+    console.error("Final parse failed:", e, "JSON string:", codeJsonStr)
+    return { changes: [], error: `Failed to parse code changes: ${errorMessage}` }
+  }
+}
+
+export const useChat = (
+  fileSystem: FileSystem,
+  setFileSystem: React.Dispatch<React.SetStateAction<FileSystem>>,
+  model: AiModel,
+  openAIAPIKey: string | null,
+  onOpenSettings: () => void,
+) => {
+  const [messages, setMessages] = useState<Message[]>([])
+  const [aiStatus, setAiStatus] = useState<AiStatus>("idle")
+  const stopGenerationRef = useRef(false)
+  const lastUploadedImageRef = useRef<{ data: string; mimeType: string } | null>(null)
+
+  const stopGeneration = useCallback(() => {
+    stopGenerationRef.current = true
+  }, [])
+
+  const clearLastUploadedImage = useCallback(() => {
+    lastUploadedImageRef.current = null
+  }, [])
+
+  const buildOpenAIHistory = (currentMessages: Message[]): ChatCompletionMessageParam[] => {
+    const history: ChatCompletionMessageParam[] = [{ role: "system", content: AI_SYSTEM_PROMPT }];
+    currentMessages.forEach((msg) => {
+      if (!msg.isStreaming && !msg.error && (msg.role === "user" || msg.role === "ai")) {
+        const messageContent = msg.text;
+        if (messageContent) {
+           if (msg.role === "user") {
+              if (msg.imageUrl) return; // Skip user messages with images, they are handled separately in the current prompt
+              history.push({ role: "user", content: messageContent });
+           } else {
+              history.push({ role: "assistant", content: messageContent });
+           }
+        }
+      }
+    });
+    return history;
+  };
+
+  const buildGeminiHistory = (currentMessages: Message[]): Content[] => {
+    const history: Content[] = []
+    currentMessages.forEach((msg) => {
+      if (!msg.isStreaming && !msg.error && (msg.role === "user" || msg.role === "ai")) {
+        if (msg.role === "user" && msg.imageUrl) return
+
+        const messageText = msg.text
+
+        if (messageText) {
+          history.push({
+            role: msg.role === "user" ? "user" : "model",
+            parts: [{ text: messageText }],
+          })
+        }
+      }
+    })
+    return history
+  }
+
+  const sendMessage = useCallback(
+    async (prompt: string, image: File | null) => {
+      if (model === 'chatgpt-5' && !openAIAPIKey) {
+        onOpenSettings();
+        return;
+      }
+
+      stopGenerationRef.current = false
+      setAiStatus("thinking")
+
+      const userMessage: Message = { id: Date.now().toString(), role: "user", text: prompt }
+      const messagesBeforeSend = [...messages]
+      
+      const fileContextParts: string[] = ['\n\n--- CURRENT FILE SYSTEM ---'];
+      for (const [path, data] of Object.entries(fileSystem)) {
+        if (!data.isBinary) { // Don't send binary file content
+          const lang = path.split('.').pop() || '';
+          fileContextParts.push(`\n### \`${path}\`\n\`\`\`${lang}\n${data.content}\n\`\`\``);
+        } else {
+          fileContextParts.push(`\n### \`${path}\`\n[Binary file: ${data.type}]`);
+        }
+      }
+      const fileContext = fileContextParts.join('\n');
+      const textPromptContent = prompt + fileContext;
+
+      if (image) {
+        try {
+          userMessage.imageUrl = URL.createObjectURL(image)
+          const { data: base64Data, mimeType } = await convertImageToBase64(image)
+          lastUploadedImageRef.current = { data: base64Data, mimeType }
+        } catch (error) {
+          console.error("Error processing image upload:", error)
+          const errorMsg: Message = {
+            id: (Date.now() + 1).toString(),
+            role: "ai",
+            text: "Sorry, I failed to process the image you uploaded.",
+            error: error instanceof Error ? error.message : "Unknown error",
+          }
+          setMessages((prev) => [...prev, userMessage, errorMsg])
+          setAiStatus("idle")
+          if (userMessage.imageUrl) URL.revokeObjectURL(userMessage.imageUrl)
+          return
+        }
+      }
+
+      messagesBeforeSend.push(userMessage)
+      setMessages(messagesBeforeSend)
+
+      const aiMessageId = (Date.now() + 2).toString()
+      const aiMessagePlaceholder: Message = { id: aiMessageId, role: "ai", text: "", isStreaming: true }
+      setMessages((prev) => [...prev, aiMessagePlaceholder])
+      setAiStatus("streaming")
+
+      let fullResponseText = ""
+      const fileSystemSnapshot = JSON.parse(JSON.stringify(fileSystem));
+
+      if (model === 'chatgpt-5') {
+        // OpenAI Logic
+        try {
+          const openai = new OpenAI({ apiKey: openAIAPIKey, dangerouslyAllowBrowser: true });
+          const history = buildOpenAIHistory(messagesBeforeSend);
+          
+          const userPromptContent: (OpenAI.Chat.Completions.ChatCompletionContentPartText | OpenAI.Chat.Completions.ChatCompletionContentPartImage)[] = [{ type: 'text', text: textPromptContent }];
+
+          if (image && lastUploadedImageRef.current) {
+            userPromptContent.push({
+              type: 'image_url',
+              image_url: { url: `data:${lastUploadedImageRef.current.mimeType};base64,${lastUploadedImageRef.current.data}` }
+            });
+          }
+          
+          history.push({ role: 'user', content: userPromptContent });
+
+          const stream = await openai.chat.completions.create({
+            model: 'gpt-4o',
+            messages: history,
+            stream: true,
+          });
+
+          for await (const chunk of stream) {
+            if (stopGenerationRef.current) break;
+            fullResponseText += chunk.choices[0]?.delta?.content || '';
+            
+            const conversationalPart = fullResponseText.split("[CODE_CHANGES]")[0];
+            const streamedChanges = parseStreamedCodeChanges(fullResponseText);
+            
+            setMessages((prev) => prev.map((m) => m.id === aiMessageId ? { ...m, text: conversationalPart, codeChanges: streamedChanges ?? m.codeChanges } : m));
+          }
+
+        } catch (error) {
+            const userFriendlyError = getFriendlyErrorMessage(error, 'api');
+            console.error(`OpenAI streaming error:`, error);
+            setMessages((prev) => prev.map((m) => m.id === aiMessageId ? { ...m, isStreaming: false, text: '', error: userFriendlyError } : m));
+        }
+
+      } else {
+        // Gemini Logic
+        try {
+          const ai = new GoogleGenAI({ apiKey: process.env.API_KEY })
+          const chatHistory = buildGeminiHistory(messagesBeforeSend)
+
+          const systemInstruction = AI_SYSTEM_PROMPT;
+          
+          const promptParts: Part[] = []
+          if (image && lastUploadedImageRef.current) {
+            promptParts.push({
+              inlineData: {
+                mimeType: lastUploadedImageRef.current.mimeType,
+                data: lastUploadedImageRef.current.data,
+              },
+            })
+          }
+          promptParts.unshift({ text: textPromptContent })
+
+          const chat = ai.chats.create({
+            model: 'gemini-2.5-flash',
+            config: { systemInstruction },
+            history: chatHistory,
+          })
+
+          const stream = await chat.sendMessageStream({ message: promptParts })
+
+          for await (const chunk of stream) {
+            if (stopGenerationRef.current) break
+
+            fullResponseText += chunk.text
+
+            const conversationalPart = fullResponseText.split("[CODE_CHANGES]")[0]
+            const streamedChanges = parseStreamedCodeChanges(fullResponseText)
+
+            setMessages((prev) =>
+              prev.map((m) =>
+                m.id === aiMessageId
+                  ? { ...m, text: conversationalPart, codeChanges: streamedChanges ?? m.codeChanges }
+                  : m,
+              ),
+            )
+          }
+        } catch (error) {
+            const userFriendlyError = getFriendlyErrorMessage(error, 'api');
+            console.error(`AI streaming error:`, error)
+            setMessages((prev) =>
+              prev.map((m) =>
+                m.id === aiMessageId ? { ...m, isStreaming: false, text: '', error: userFriendlyError } : m,
+              ),
+            )
+        }
+      }
+
+      if (stopGenerationRef.current) {
+        console.log("Generation stopped by user.")
+      }
+
+      const { changes: finalChanges, error: parseError } = finalParseCodeChanges(fullResponseText)
+
+      if (finalChanges.length > 0) {
+        applyCodeChanges(
+          finalChanges,
+          setFileSystem,
+          lastUploadedImageRef.current,
+          clearLastUploadedImage,
+        )
+      }
+
+      setMessages((prev) =>
+        prev.map((m) => {
+          if (m.id === aiMessageId) {
+            let finalConversationalText = fullResponseText
+              .replace(/\[CODE_CHANGES\][\s\S]*?\[CODE_CHANGES_END\]/g, "")
+              .trim()
+            if (!finalConversationalText && finalChanges.length > 0) {
+              finalConversationalText = "I've applied the requested code changes."
+            }
+            
+            const finalError = parseError ? getFriendlyErrorMessage(parseError, 'parsing') : m.error;
+
+            return {
+              ...m,
+              text: finalConversationalText,
+              codeChanges: finalChanges.length > 0 ? finalChanges : m.codeChanges,
+              isStreaming: false,
+              error: finalError,
+              ...(finalChanges.length > 0 && { previousFileSystem: fileSystemSnapshot }),
+            }
+          }
+          return m
+        }),
+      )
+      
+      if (userMessage.imageUrl) {
+        URL.revokeObjectURL(userMessage.imageUrl)
+      }
+      setAiStatus("idle")
+    },
+    [fileSystem, setFileSystem, messages, clearLastUploadedImage, model, openAIAPIKey, onOpenSettings],
+  )
+
+  return { messages, setMessages, sendMessage, aiStatus, stopGeneration }
+}
