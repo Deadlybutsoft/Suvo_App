@@ -1,26 +1,25 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { StopIcon, PlusIcon, CloseIcon, ArrowRightIcon, GlobeIcon, PhotoIcon, CheckIcon } from './icons/index';
-import { AiStatus, AiModel } from '../types';
+import { AiStatus, OperationMode } from '../types';
 
 interface ChatInputProps {
   onSendMessage: (prompt: string, image: File | null) => void;
   aiStatus: AiStatus;
   stopGeneration: () => void;
-  model: AiModel;
-  onSetModel: (model: AiModel) => void;
+  operationMode: OperationMode;
+  onSetOperationMode: (mode: OperationMode) => void;
 }
 
 export const ChatInput: React.FC<ChatInputProps> = ({ 
     onSendMessage, 
     aiStatus, 
     stopGeneration,
-    model,
-    onSetModel,
+    operationMode,
+    onSetOperationMode,
 }) => {
   const [prompt, setPrompt] = useState('');
   const [image, setImage] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
-  const [isWebSearchEnabled, setWebSearchEnabled] = useState(false);
   
   const [isAddMenuOpen, setAddMenuOpen] = useState(false);
   
@@ -82,15 +81,9 @@ export const ChatInput: React.FC<ChatInputProps> = ({
   const handleSend = () => {
     if (isGenerating || (!prompt.trim() && !image)) return;
 
-    let finalPrompt = prompt;
-    if (isWebSearchEnabled) {
-      finalPrompt = `Please perform a web search for "${prompt}" and build something based on the results.`;
-    }
-
-    onSendMessage(finalPrompt, image);
+    onSendMessage(prompt, image);
     setPrompt('');
     handleRemoveImage();
-    setWebSearchEnabled(false);
   };
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
@@ -124,21 +117,22 @@ export const ChatInput: React.FC<ChatInputProps> = ({
             </div>
         </div>
       )}
+      
+      {operationMode === 'chat' && (
+        <div className="bg-zinc-900 border-b border-zinc-700 p-2 flex items-center justify-between">
+          <p className="text-sm font-semibold text-zinc-300 px-2">Chat Mode</p>
+          <button
+            onClick={() => onSetOperationMode('gemini-2.5-flash')}
+            className="p-1 text-zinc-400 hover:text-white hover:bg-zinc-800 rounded-none transition-colors"
+            aria-label="Exit Chat Mode"
+            title="Exit Chat Mode"
+          >
+            <CloseIcon className="w-4 h-4" />
+          </button>
+        </div>
+      )}
 
       <div className="p-4 flex flex-col gap-4">
-        {isWebSearchEnabled && (
-            <div className="flex items-center gap-2 bg-zinc-900 border border-zinc-600 rounded-none px-3 py-1.5 text-sm w-fit">
-                <GlobeIcon className="w-4 h-4 text-zinc-400" />
-                <span className="font-medium text-zinc-300">Web Search</span>
-                <button
-                    onClick={() => setWebSearchEnabled(false)}
-                    className="p-0.5 -mr-1 rounded-full hover:bg-zinc-700"
-                    aria-label="Disable web search"
-                >
-                    <CloseIcon className="w-4 h-4" />
-                </button>
-            </div>
-        )}
         <textarea
           ref={textareaRef}
           value={prompt}
@@ -164,9 +158,6 @@ export const ChatInput: React.FC<ChatInputProps> = ({
               {isAddMenuOpen && (
                 <div className="absolute bottom-full left-0 mb-2 w-64 bg-black border border-zinc-700 shadow-xl z-10 p-2">
                   <div className="space-y-1">
-                    <button onClick={() => { setWebSearchEnabled(true); setAddMenuOpen(false); }} className="w-full flex items-center gap-3 p-2 text-sm text-left text-slate-300 hover:bg-zinc-800 transition-colors">
-                      <GlobeIcon className="w-5 h-5"/> <span>Web Search</span>
-                    </button>
                     <button onClick={() => { fileInputRef.current?.click(); setAddMenuOpen(false); }} className="w-full flex items-center gap-3 p-2 text-sm text-left text-slate-300 hover:bg-zinc-800 transition-colors">
                       <PhotoIcon className="w-5 h-5"/> <span>Attach Image</span>
                     </button>
@@ -177,20 +168,28 @@ export const ChatInput: React.FC<ChatInputProps> = ({
                   </div>
                   <div className="space-y-1">
                     <button 
-                      onClick={() => { onSetModel('gemini-2.5-flash'); setAddMenuOpen(false); }}
-                      className={`w-full flex items-center justify-between gap-3 p-2 text-sm text-left rounded-none transition-colors ${model === 'gemini-2.5-flash' ? 'bg-zinc-800 text-white' : 'text-slate-300 hover:bg-zinc-800'}`}
+                      onClick={() => { onSetOperationMode('gemini-2.5-flash'); setAddMenuOpen(false); }}
+                      className={`w-full flex items-center justify-between gap-3 p-2 text-sm text-left rounded-none transition-colors ${operationMode === 'gemini-2.5-flash' ? 'bg-zinc-800 text-white' : 'text-slate-300 hover:bg-zinc-800'}`}
                     >
                       <span>Gemini 2.5 Flash</span>
-                      {model === 'gemini-2.5-flash' && <CheckIcon className="w-4 h-4 text-white" />}
+                      {operationMode === 'gemini-2.5-flash' && <CheckIcon className="w-4 h-4 text-white" />}
                     </button>
                     <button 
-                      onClick={() => { onSetModel('chatgpt-5'); setAddMenuOpen(false); }}
-                      className={`w-full flex items-center justify-between gap-3 p-2 text-sm text-left rounded-none transition-colors ${model === 'chatgpt-5' ? 'bg-zinc-800 text-white' : 'text-slate-300 hover:bg-zinc-800'}`}
+                      onClick={() => { onSetOperationMode('chatgpt-5'); setAddMenuOpen(false); }}
+                      className={`w-full flex items-center justify-between gap-3 p-2 text-sm text-left rounded-none transition-colors ${operationMode === 'chatgpt-5' ? 'bg-zinc-800 text-white' : 'text-slate-300 hover:bg-zinc-800'}`}
                     >
                       <span className="flex items-center gap-2">
                         ChatGPT 5 
                       </span>
-                      {model === 'chatgpt-5' && <CheckIcon className="w-4 h-4 text-white" />}
+                      {operationMode === 'chatgpt-5' && <CheckIcon className="w-4 h-4 text-white" />}
+                    </button>
+                     <div className="border-t border-zinc-700 my-1 mx-2"></div>
+                     <button 
+                      onClick={() => { onSetOperationMode('chat'); setAddMenuOpen(false); }}
+                      className={`w-full flex items-center justify-between gap-3 p-2 text-sm text-left rounded-none transition-colors ${operationMode === 'chat' ? 'bg-zinc-800 text-white' : 'text-slate-300 hover:bg-zinc-800'}`}
+                    >
+                      <span>Chat Mode</span>
+                      {operationMode === 'chat' && <CheckIcon className="w-4 h-4 text-white" />}
                     </button>
                   </div>
                 </div>

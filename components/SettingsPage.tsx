@@ -65,7 +65,6 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({
     }
   }, [isSaved]);
 
-
   const renderContent = () => {
     switch (activeTab) {
       case 'memory':
@@ -105,7 +104,7 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({
       case 'api_keys':
         return (
           <>
-            <SettingsHeader title="API Keys" description="Manage API keys for different AI models." />
+            <SettingsHeader title="API Keys" description="Manage API keys for different AI models and services." />
             <SettingsRow title="OpenAI API Key" description="Provide your key to use models like ChatGPT. Your key is stored locally in your browser.">
                 <div className="space-y-3">
                     <input

@@ -25,11 +25,12 @@ export const HomePage: React.FC<HomePageProps> = ({ onLaunchWorkspace }) => {
     }
     setIsLoading(true);
 
+    const firecrawlAPIKey = 'fc-255f8db2b9d14e76a2520846282d428c';
     const url = 'https://api.firecrawl.dev/v2/scrape';
     const options = {
         method: 'POST',
         headers: {
-            Authorization: 'Bearer fc-255f8db2b9d14e76a2520846282d428c',
+            Authorization: `Bearer ${firecrawlAPIKey}`,
             'Content-Type': 'application/json'
         },
         body: JSON.stringify({
@@ -136,8 +137,8 @@ export const HomePage: React.FC<HomePageProps> = ({ onLaunchWorkspace }) => {
                         onSendMessage={handleSendMessage}
                         aiStatus={'idle'}
                         stopGeneration={() => {}}
-                        model={'gemini-2.5-flash'}
-                        onSetModel={() => {}}
+                        operationMode={'gemini-2.5-flash'}
+                        onSetOperationMode={() => {}}
                     />
                 ) : (
                     <div className="relative bg-black border border-zinc-400 flex items-center text-white shadow-2xl shadow-black/50 p-4 pl-6">

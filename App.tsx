@@ -8,7 +8,7 @@ import { SideDrawer } from "./components/SideDrawer"
 import { ChatPanel } from "./components/ChatPanel"
 import { ResizablePanel } from "./components/ResizablePanel"
 import { useChat } from "./hooks/useChat"
-import type { FileSystem, AppTheme, IntegrationType, AiModel, SettingsTab } from "./types"
+import type { FileSystem, AppTheme, IntegrationType, OperationMode, SettingsTab } from "./types"
 import { HomePage } from "./components/HomePage"
 import JSZip from "jszip"
 import { SettingsPage } from "./components/SettingsPage"
@@ -196,7 +196,7 @@ const Workspace: React.FC = () => {
   
   const [fileSystem, setFileSystem] = useState<FileSystem>(initialFileSystem)
   const [activeFile, setActiveFile] = useState<string>("src/App.tsx")
-  const [model, setModel] = useState<AiModel>('gemini-2.5-flash');
+  const [operationMode, setOperationMode] = useState<OperationMode>('gemini-2.5-flash');
   const [openAIAPIKey, setOpenAIAPIKey] = useState<string | null>(() => localStorage.getItem('openai_api_key'));
 
   const handleSetOpenAIAPIKey = useCallback((key: string | null) => {
@@ -211,9 +211,9 @@ const Workspace: React.FC = () => {
   const { messages, sendMessage, aiStatus, stopGeneration, setMessages } = useChat(
     fileSystem,
     setFileSystem,
-    model,
+    operationMode,
     openAIAPIKey,
-    () => setSettingsOpen(true)
+    () => setSettingsOpen(true),
   )
   
   useEffect(() => {
@@ -374,8 +374,8 @@ const Workspace: React.FC = () => {
               stopGeneration={stopGeneration}
               onRestoreFileSystem={handleRestoreFileSystem}
               onClearChat={handleClearChat}
-              model={model}
-              onSetModel={setModel}
+              operationMode={operationMode}
+              onSetOperationMode={setOperationMode}
             />
             <MainDisplayPanel
               fileSystem={fileSystem}

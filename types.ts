@@ -45,6 +45,6 @@ export type IntegrationType =
     | 'scorecard'
     | 'stripe';
 
-export type AiModel = 'gemini-2.5-flash' | 'chatgpt-5';
+export type OperationMode = 'gemini-2.5-flash' | 'chatgpt-5' | 'chat';
 
 export type SettingsTab = 'subscription' | 'memory' | 'api_keys';

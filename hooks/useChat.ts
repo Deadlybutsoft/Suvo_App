@@ -3,7 +3,7 @@
 import type React from "react"
 
 import { useState, useCallback, useRef } from "react"
-import type { Message, AiStatus, FileSystem, FileChange, FileData, AiModel } from "../types"
+import type { Message, AiStatus, FileSystem, FileChange, FileData, OperationMode } from "../types"
 import { GoogleGenAI, type Content, type Part } from "@google/genai"
 import OpenAI from "openai"
 import type { ChatCompletionMessageParam } from "openai/resources/chat/completions"
@@ -164,6 +164,10 @@ I'll start by setting up all the necessary configuration files (\`vite.config.ts
 ---
 Now, analyze the user's request and the current file system. Generate your response following these strict instructions.
 `
+
+const AI_CHAT_MODE_SYSTEM_PROMPT = `You are "Suvo," an AI expert specializing in web development. You are currently in **Chat Mode**. 
+Your role is to be a helpful conversational partner. Discuss design principles, implementation strategies, modern web development practices, and answer any questions the user has about their project.
+**IMPORTANT:** In this mode, you MUST NOT write or edit any code. Your responses should be purely conversational text. Do not provide code snippets, and absolutely DO NOT use the [CODE_CHANGES] block format. Your goal is to guide and inform, not to code.`
 
 const convertImageToBase64 = (imageFile: File): Promise<{ data: string; mimeType: string }> => {
   return new Promise((resolve, reject) => {
@@ -424,7 +428,7 @@ const finalParseCodeChanges = (fullResponseText: string): { changes: FileChange[
 export const useChat = (
   fileSystem: FileSystem,
   setFileSystem: React.Dispatch<React.SetStateAction<FileSystem>>,
-  model: AiModel,
+  operationMode: OperationMode,
   openAIAPIKey: string | null,
   onOpenSettings: () => void,
 ) => {
@@ -441,8 +445,8 @@ export const useChat = (
     lastUploadedImageRef.current = null
   }, [])
 
-  const buildOpenAIHistory = (currentMessages: Message[]): ChatCompletionMessageParam[] => {
-    const history: ChatCompletionMessageParam[] = [{ role: "system", content: AI_SYSTEM_PROMPT }];
+  const buildOpenAIHistory = (currentMessages: Message[], systemPrompt: string): ChatCompletionMessageParam[] => {
+    const history: ChatCompletionMessageParam[] = [{ role: "system", content: systemPrompt }];
     currentMessages.forEach((msg) => {
       if (!msg.isStreaming && !msg.error && (msg.role === "user" || msg.role === "ai")) {
         const messageContent = msg.text;
@@ -479,8 +483,11 @@ export const useChat = (
   }
 
   const sendMessage = useCallback(
-    async (prompt: string, image: File | null) => {
-      if (model === 'chatgpt-5' && !openAIAPIKey) {
+    async (initialPrompt: string, image: File | null) => {
+      const isChatMode = operationMode === 'chat';
+      const modelToUse = isChatMode ? 'gemini-2.5-flash' : operationMode;
+
+      if (modelToUse === 'chatgpt-5' && !openAIAPIKey) {
         onOpenSettings();
         return;
       }
@@ -488,26 +495,16 @@ export const useChat = (
       stopGenerationRef.current = false
       setAiStatus("thinking")
 
-      const userMessage: Message = { id: Date.now().toString(), role: "user", text: prompt }
+      const userMessage: Message = { id: Date.now().toString(), role: "user", text: initialPrompt }
       const messagesBeforeSend = [...messages]
       
-      const fileContextParts: string[] = ['\n\n--- CURRENT FILE SYSTEM ---'];
-      for (const [path, data] of Object.entries(fileSystem)) {
-        if (!data.isBinary) { // Don't send binary file content
-          const lang = path.split('.').pop() || '';
-          fileContextParts.push(`\n### \`${path}\`\n\`\`\`${lang}\n${data.content}\n\`\`\``);
-        } else {
-          fileContextParts.push(`\n### \`${path}\`\n[Binary file: ${data.type}]`);
-        }
-      }
-      const fileContext = fileContextParts.join('\n');
-      const textPromptContent = prompt + fileContext;
-
-      if (image) {
+      let imageForNextTurn: { data: string; mimeType: string } | null = null
+      if (image && !isChatMode) { // Images are ignored in chat mode
         try {
           userMessage.imageUrl = URL.createObjectURL(image)
           const { data: base64Data, mimeType } = await convertImageToBase64(image)
           lastUploadedImageRef.current = { data: base64Data, mimeType }
+          imageForNextTurn = lastUploadedImageRef.current
         } catch (error) {
           console.error("Error processing image upload:", error)
           const errorMsg: Message = {
@@ -525,154 +522,123 @@ export const useChat = (
 
       messagesBeforeSend.push(userMessage)
       setMessages(messagesBeforeSend)
-
+      
       const aiMessageId = (Date.now() + 2).toString()
+      const fileSystemSnapshot = isChatMode ? null : JSON.parse(JSON.stringify(fileSystem));
       const aiMessagePlaceholder: Message = { id: aiMessageId, role: "ai", text: "", isStreaming: true }
       setMessages((prev) => [...prev, aiMessagePlaceholder])
       setAiStatus("streaming")
 
+      const fileContext = isChatMode ? '' : ['\n\n--- CURRENT FILE SYSTEM ---', ...Object.entries(fileSystem).map(([path, data]) => {
+        if (!data.isBinary) {
+          const lang = path.split('.').pop() || '';
+          return `\n### \`${path}\`\n\`\`\`${lang}\n${data.content}\n\`\`\``;
+        } else {
+          return `\n### \`${path}\`\n[Binary file: ${data.type}]`;
+        }
+      })].join('\n');
+
+      const textPromptContent = initialPrompt + fileContext;
+      const systemInstruction = isChatMode ? AI_CHAT_MODE_SYSTEM_PROMPT : AI_SYSTEM_PROMPT;
       let fullResponseText = ""
-      const fileSystemSnapshot = JSON.parse(JSON.stringify(fileSystem));
 
-      if (model === 'chatgpt-5') {
-        // OpenAI Logic
-        try {
+      try {
+        if (modelToUse === 'chatgpt-5') {
           const openai = new OpenAI({ apiKey: openAIAPIKey, dangerouslyAllowBrowser: true });
-          const history = buildOpenAIHistory(messagesBeforeSend);
-          
+          const history = buildOpenAIHistory(messagesBeforeSend, systemInstruction);
           const userPromptContent: (OpenAI.Chat.Completions.ChatCompletionContentPartText | OpenAI.Chat.Completions.ChatCompletionContentPartImage)[] = [{ type: 'text', text: textPromptContent }];
-
-          if (image && lastUploadedImageRef.current) {
+          
+          if (imageForNextTurn) {
             userPromptContent.push({
               type: 'image_url',
-              image_url: { url: `data:${lastUploadedImageRef.current.mimeType};base64,${lastUploadedImageRef.current.data}` }
+              image_url: { url: `data:${imageForNextTurn.mimeType};base64,${imageForNextTurn.data}` }
             });
           }
           
           history.push({ role: 'user', content: userPromptContent });
-
-          const stream = await openai.chat.completions.create({
-            model: 'gpt-4o',
-            messages: history,
-            stream: true,
-          });
-
+          const stream = await openai.chat.completions.create({ model: 'gpt-4o', messages: history, stream: true });
+          
           for await (const chunk of stream) {
             if (stopGenerationRef.current) break;
             fullResponseText += chunk.choices[0]?.delta?.content || '';
-            
             const conversationalPart = fullResponseText.split("[CODE_CHANGES]")[0];
             const streamedChanges = parseStreamedCodeChanges(fullResponseText);
-            
             setMessages((prev) => prev.map((m) => m.id === aiMessageId ? { ...m, text: conversationalPart, codeChanges: streamedChanges ?? m.codeChanges } : m));
           }
-
-        } catch (error) {
-            const userFriendlyError = getFriendlyErrorMessage(error, 'api');
-            console.error(`OpenAI streaming error:`, error);
-            setMessages((prev) => prev.map((m) => m.id === aiMessageId ? { ...m, isStreaming: false, text: '', error: userFriendlyError } : m));
-        }
-
-      } else {
-        // Gemini Logic
-        try {
+        } else { // Gemini or Chat Mode (which uses Gemini)
           const ai = new GoogleGenAI({ apiKey: process.env.API_KEY })
           const chatHistory = buildGeminiHistory(messagesBeforeSend)
-
-          const systemInstruction = AI_SYSTEM_PROMPT;
           
           const promptParts: Part[] = []
-          if (image && lastUploadedImageRef.current) {
-            promptParts.push({
-              inlineData: {
-                mimeType: lastUploadedImageRef.current.mimeType,
-                data: lastUploadedImageRef.current.data,
-              },
-            })
+          if (imageForNextTurn) {
+            promptParts.push({ inlineData: { mimeType: imageForNextTurn.mimeType, data: imageForNextTurn.data } });
           }
           promptParts.unshift({ text: textPromptContent })
 
-          const chat = ai.chats.create({
-            model: 'gemini-2.5-flash',
-            config: { systemInstruction },
-            history: chatHistory,
-          })
-
-          const stream = await chat.sendMessageStream({ message: promptParts })
-
+          const chat = ai.chats.create({ model: 'gemini-2.5-flash', config: { systemInstruction }, history: chatHistory });
+          const stream = await chat.sendMessageStream({ message: promptParts });
+          
           for await (const chunk of stream) {
             if (stopGenerationRef.current) break
-
             fullResponseText += chunk.text
-
-            const conversationalPart = fullResponseText.split("[CODE_CHANGES]")[0]
-            const streamedChanges = parseStreamedCodeChanges(fullResponseText)
-
-            setMessages((prev) =>
-              prev.map((m) =>
-                m.id === aiMessageId
-                  ? { ...m, text: conversationalPart, codeChanges: streamedChanges ?? m.codeChanges }
-                  : m,
-              ),
-            )
+            if (isChatMode) {
+                setMessages((prev) => prev.map((m) => m.id === aiMessageId ? { ...m, text: fullResponseText } : m));
+            } else {
+                const conversationalPart = fullResponseText.split("[CODE_CHANGES]")[0]
+                const streamedChanges = parseStreamedCodeChanges(fullResponseText)
+                setMessages((prev) => prev.map((m) => m.id === aiMessageId ? { ...m, text: conversationalPart, codeChanges: streamedChanges ?? m.codeChanges } : m));
+            }
           }
-        } catch (error) {
-            const userFriendlyError = getFriendlyErrorMessage(error, 'api');
-            console.error(`AI streaming error:`, error)
-            setMessages((prev) =>
-              prev.map((m) =>
-                m.id === aiMessageId ? { ...m, isStreaming: false, text: '', error: userFriendlyError } : m,
-              ),
-            )
         }
+      } catch(error) {
+          const userFriendlyError = getFriendlyErrorMessage(error, 'api');
+          console.error(`AI streaming error:`, error)
+          setMessages((prev) => prev.map((m) => m.id === aiMessageId ? { ...m, isStreaming: false, text: '', error: userFriendlyError } : m));
+          setAiStatus("idle");
+          return;
       }
 
       if (stopGenerationRef.current) {
         console.log("Generation stopped by user.")
       }
+      
+      if (isChatMode) {
+        setMessages((prev) => prev.map((m) => m.id === aiMessageId ? { ...m, isStreaming: false, text: fullResponseText.trim() } : m));
+      } else {
+        const { changes: finalChanges, error: parseError } = finalParseCodeChanges(fullResponseText)
 
-      const { changes: finalChanges, error: parseError } = finalParseCodeChanges(fullResponseText)
+        if (finalChanges.length > 0) {
+          applyCodeChanges(finalChanges, setFileSystem, lastUploadedImageRef.current, clearLastUploadedImage);
+        }
 
-      if (finalChanges.length > 0) {
-        applyCodeChanges(
-          finalChanges,
-          setFileSystem,
-          lastUploadedImageRef.current,
-          clearLastUploadedImage,
+        setMessages((prev) =>
+          prev.map((m) => {
+            if (m.id === aiMessageId) {
+              let finalConversationalText = fullResponseText.replace(/\[CODE_CHANGES\][\s\S]*?\[CODE_CHANGES_END\]/g, "").trim()
+              if (!finalConversationalText && finalChanges.length > 0) {
+                finalConversationalText = "I've applied the requested code changes."
+              }
+              const finalError = parseError ? getFriendlyErrorMessage(parseError, 'parsing') : m.error;
+              return {
+                ...m,
+                text: finalConversationalText,
+                codeChanges: finalChanges.length > 0 ? finalChanges : m.codeChanges,
+                isStreaming: false,
+                error: finalError,
+                ...(finalChanges.length > 0 && { previousFileSystem: fileSystemSnapshot }),
+              }
+            }
+            return m
+          }),
         )
       }
 
-      setMessages((prev) =>
-        prev.map((m) => {
-          if (m.id === aiMessageId) {
-            let finalConversationalText = fullResponseText
-              .replace(/\[CODE_CHANGES\][\s\S]*?\[CODE_CHANGES_END\]/g, "")
-              .trim()
-            if (!finalConversationalText && finalChanges.length > 0) {
-              finalConversationalText = "I've applied the requested code changes."
-            }
-            
-            const finalError = parseError ? getFriendlyErrorMessage(parseError, 'parsing') : m.error;
-
-            return {
-              ...m,
-              text: finalConversationalText,
-              codeChanges: finalChanges.length > 0 ? finalChanges : m.codeChanges,
-              isStreaming: false,
-              error: finalError,
-              ...(finalChanges.length > 0 && { previousFileSystem: fileSystemSnapshot }),
-            }
-          }
-          return m
-        }),
-      )
-      
       if (userMessage.imageUrl) {
         URL.revokeObjectURL(userMessage.imageUrl)
       }
       setAiStatus("idle")
     },
-    [fileSystem, setFileSystem, messages, clearLastUploadedImage, model, openAIAPIKey, onOpenSettings],
+    [fileSystem, setFileSystem, messages, clearLastUploadedImage, operationMode, openAIAPIKey, onOpenSettings],
   )
 
   return { messages, setMessages, sendMessage, aiStatus, stopGeneration }

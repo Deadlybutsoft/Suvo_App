@@ -1,5 +1,5 @@
 import React, { useRef, useEffect } from 'react';
-import { Message as MessageType, AiStatus, FileSystem, AiModel } from '../types';
+import { Message as MessageType, AiStatus, FileSystem, OperationMode } from '../types';
 import { Message } from './Message';
 import { ChatInput } from './ChatInput';
 import { SuvoChatSuggestions } from './SuvoChatSuggestions';
@@ -11,8 +11,8 @@ interface ChatPanelProps {
   stopGeneration: () => void;
   onRestoreFileSystem: (fs: FileSystem) => void;
   onClearChat: () => boolean;
-  model: AiModel;
-  onSetModel: (model: AiModel) => void;
+  operationMode: OperationMode;
+  onSetOperationMode: (mode: OperationMode) => void;
 }
 
 export const ChatPanel: React.FC<ChatPanelProps> = ({ 
@@ -22,8 +22,8 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
     stopGeneration,
     onRestoreFileSystem,
     onClearChat,
-    model,
-    onSetModel,
+    operationMode,
+    onSetOperationMode,
 }) => {
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
@@ -60,8 +60,8 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
             onSendMessage={onSendMessage} 
             aiStatus={aiStatus} 
             stopGeneration={stopGeneration}
-            model={model}
-            onSetModel={onSetModel}
+            operationMode={operationMode}
+            onSetOperationMode={onSetOperationMode}
         />
       </div>
     </div>
