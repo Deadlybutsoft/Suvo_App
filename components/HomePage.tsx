@@ -19,16 +19,6 @@ export const HomePage: React.FC<HomePageProps> = ({ onLaunchWorkspace }) => {
     onLaunchWorkspace(isInputProvided ? prompt : undefined, image);
   };
 
-  const base64ToBlob = (base64: string, mimeType: string): Blob => {
-    const byteCharacters = atob(base64);
-    const byteNumbers = new Array(byteCharacters.length);
-    for (let i = 0; i < byteCharacters.length; i++) {
-      byteNumbers[i] = byteCharacters.charCodeAt(i);
-    }
-    const byteArray = new Uint8Array(byteNumbers);
-    return new Blob([byteArray], { type: mimeType });
-  };
-
   const handleClone = async () => {
     if (!cloneUrl.trim() || isLoading) {
         return;
@@ -44,45 +34,43 @@ export const HomePage: React.FC<HomePageProps> = ({ onLaunchWorkspace }) => {
         },
         body: JSON.stringify({
             "url": cloneUrl,
-            "onlyMainContent": true,
-            "maxAge": 172800000,
-            "parsers": [],
-            "formats": [
-                {
-                    "type": "screenshot",
-                    "fullPage": true,
-                    "output": "base64"
-                }
-            ],
-            "origin": "website"
+            "formats": [{
+                "type": "screenshot",
+                "fullPage": true,
+                "quality": 80
+            }]
         })
     };
 
     try {
-        const response = await fetch(url, options);
+        const firecrawlResponse = await fetch(url, options);
 
-        if (!response.ok) {
-            const errorData = await response.json();
-            throw new Error(errorData.error || `Firecrawl API failed with status ${response.status}`);
+        if (!firecrawlResponse.ok) {
+            const errorData = await firecrawlResponse.json();
+            throw new Error(errorData.error || `Firecrawl API failed with status ${firecrawlResponse.status}`);
         }
 
-        const result = await response.json();
-
-        if (!result.data || !Array.isArray(result.data)) {
-             throw new Error('Invalid response structure from Firecrawl API.');
+        const result = await firecrawlResponse.json();
+        
+        if (!result.success) {
+            throw new Error(result.error || 'Firecrawl reported an unsuccessful scrape.');
         }
 
-        const screenshotResult = result.data.find((item: any) => item.type === 'screenshot');
+        const screenshotUrl = result?.data?.screenshot;
 
-        if (!screenshotResult || screenshotResult.status !== 'success' || !screenshotResult.data) {
-            const errorReason = screenshotResult?.error || 'Screenshot data not found in Firecrawl response.';
-            throw new Error(errorReason);
+        if (typeof screenshotUrl !== 'string' || !screenshotUrl.startsWith('http')) {
+             console.error('Unexpected Firecrawl response structure. Screenshot URL not found or in wrong format.', result);
+            throw new Error('Valid screenshot URL not found in Firecrawl response.');
         }
 
-        const screenshotBase64 = screenshotResult.data;
-
-        const blob = base64ToBlob(screenshotBase64, 'image/png');
-        const imageFile = new File([blob], 'screenshot.png', { type: 'image/png' });
+        // Fetch the screenshot image from the URL provided by Firecrawl
+        const imageResponse = await fetch(screenshotUrl);
+        if (!imageResponse.ok) {
+            throw new Error(`Failed to fetch the screenshot image. Status: ${imageResponse.status}`);
+        }
+        const blob = await imageResponse.blob();
+        
+        const imageFile = new File([blob], 'screenshot.png', { type: blob.type });
 
         const clonePrompt = `This is a screenshot of a website. Please create a new single-page application that looks identical to it. Pay close attention to layout, colors, fonts, and spacing.`;
         onLaunchWorkspace(clonePrompt, imageFile);
@@ -168,7 +156,7 @@ export const HomePage: React.FC<HomePageProps> = ({ onLaunchWorkspace }) => {
                             className="w-11 h-11 ml-4 flex-shrink-0 flex items-center justify-center bg-white text-black transition-colors disabled:bg-zinc-800 disabled:text-zinc-500 disabled:cursor-not-allowed"
                             aria-label="Clone website"
                         >
-                            {isLoading ? <SpinnerIcon className="h-5 w-5" /> : <ArrowRightIcon className="h-5 h-5" />}
+                            {isLoading ? <SpinnerIcon className="h-5 w-5" /> : <ArrowRightIcon className="h-5 w-5" />}
                         </button>
                     </div>
                 )}
