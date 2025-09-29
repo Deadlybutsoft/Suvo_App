@@ -1,5 +1,3 @@
-
-
 import React, { useState, useEffect } from 'react';
 import { CloseIcon, CheckIcon } from './icons';
 
@@ -68,8 +66,8 @@ export const PricingModal: React.FC<PricingModalProps> = ({ isOpen, onClose }) =
                                 Your Current Plan
                             </button>
                             <ul className="space-y-4 text-zinc-300 mt-8 text-left flex-grow">
-                                <PlanFeature>Public projects</PlanFeature>
-                                <PlanFeature>Up to 2 collaborators</PlanFeature>
+                                <PlanFeature>Access to all features</PlanFeature>
+                                <PlanFeature>30 AI chats per month</PlanFeature>
                             </ul>
                         </div>
 
@@ -88,11 +86,8 @@ export const PricingModal: React.FC<PricingModalProps> = ({ isOpen, onClose }) =
                                 Upgrade to Pro
                             </button>
                             <ul className="space-y-4 text-zinc-300 mt-8 text-left flex-grow">
-                                <PlanFeature>100 monthly credits</PlanFeature>
-                                <PlanFeature>Private projects & custom domains</PlanFeature>
-                                <PlanFeature>Advanced AI models (Claude Opus)</PlanFeature>
-                                <PlanFeature>Remove the "Lovable" badge</PlanFeature>
-                                <PlanFeature>Priority support</PlanFeature>
+                                <PlanFeature>250 AI chats per month</PlanFeature>
+                                <PlanFeature>All paid features</PlanFeature>
                             </ul>
                         </div>
                     </div>
