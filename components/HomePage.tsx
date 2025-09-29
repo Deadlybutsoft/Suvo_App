@@ -2,30 +2,98 @@ import React, { useState } from 'react';
 import { ChatInput } from './ChatInput';
 import { Link } from 'react-router-dom';
 import { AuthPage } from './AuthPage';
-import { SparklesIcon, LinkIcon, ArrowRightIcon } from './icons';
+import { SparklesIcon, LinkIcon, ArrowRightIcon, SpinnerIcon } from './icons';
 
 interface HomePageProps {
-  onLaunchWorkspace: (prompt?: string) => void;
+  onLaunchWorkspace: (prompt?: string, image?: File | null) => void;
 }
 
 export const HomePage: React.FC<HomePageProps> = ({ onLaunchWorkspace }) => {
   const [isAuthOpen, setIsAuthOpen] = useState(false);
   const [mode, setMode] = useState<'clone' | 'prompt'>('clone');
   const [cloneUrl, setCloneUrl] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
 
   const handleSendMessage = (prompt: string, image: File | null) => {
     const isInputProvided = prompt.trim() !== '' || image !== null;
-    onLaunchWorkspace(isInputProvided ? prompt : undefined);
+    onLaunchWorkspace(isInputProvided ? prompt : undefined, image);
   };
 
-  const handleClone = () => {
-    if (!cloneUrl.trim()) {
+  const base64ToBlob = (base64: string, mimeType: string): Blob => {
+    const byteCharacters = atob(base64);
+    const byteNumbers = new Array(byteCharacters.length);
+    for (let i = 0; i < byteCharacters.length; i++) {
+      byteNumbers[i] = byteCharacters.charCodeAt(i);
+    }
+    const byteArray = new Uint8Array(byteNumbers);
+    return new Blob([byteArray], { type: mimeType });
+  };
+
+  const handleClone = async () => {
+    if (!cloneUrl.trim() || isLoading) {
         return;
     }
-    // As per the request, this prompt will instruct the AI to use firecrawl
-    const clonePrompt = `Use Firecrawl to clone the website content from the URL: ${cloneUrl}. After you have the content, rebuild the site using React and Tailwind CSS. Focus on matching the layout, colors, and typography.`;
-    onLaunchWorkspace(clonePrompt);
+    setIsLoading(true);
+
+    const url = 'https://api.firecrawl.dev/v2/scrape';
+    const options = {
+        method: 'POST',
+        headers: {
+            Authorization: 'Bearer fc-255f8db2b9d14e76a2520846282d428c',
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+            "url": cloneUrl,
+            "onlyMainContent": true,
+            "maxAge": 172800000,
+            "parsers": [],
+            "formats": [
+                {
+                    "type": "screenshot",
+                    "fullPage": true,
+                    "output": "base64"
+                }
+            ],
+            "origin": "website"
+        })
+    };
+
+    try {
+        const response = await fetch(url, options);
+
+        if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData.error || `Firecrawl API failed with status ${response.status}`);
+        }
+
+        const result = await response.json();
+
+        if (!result.data || !Array.isArray(result.data)) {
+             throw new Error('Invalid response structure from Firecrawl API.');
+        }
+
+        const screenshotResult = result.data.find((item: any) => item.type === 'screenshot');
+
+        if (!screenshotResult || screenshotResult.status !== 'success' || !screenshotResult.data) {
+            const errorReason = screenshotResult?.error || 'Screenshot data not found in Firecrawl response.';
+            throw new Error(errorReason);
+        }
+
+        const screenshotBase64 = screenshotResult.data;
+
+        const blob = base64ToBlob(screenshotBase64, 'image/png');
+        const imageFile = new File([blob], 'screenshot.png', { type: 'image/png' });
+
+        const clonePrompt = `This is a screenshot of a website. Please create a new single-page application that looks identical to it. Pay close attention to layout, colors, fonts, and spacing.`;
+        onLaunchWorkspace(clonePrompt, imageFile);
+
+    } catch (error) {
+        console.error("Failed to clone site:", error);
+        alert(`Failed to clone site: ${error instanceof Error ? error.message : String(error)}`);
+        setIsLoading(false);
+    }
   };
+
 
   return (
     <div className="h-screen w-screen text-white flex flex-col bg-black">
@@ -96,11 +164,11 @@ export const HomePage: React.FC<HomePageProps> = ({ onLaunchWorkspace }) => {
                         />
                         <button
                             onClick={handleClone}
-                            disabled={!cloneUrl.trim()}
+                            disabled={!cloneUrl.trim() || isLoading}
                             className="w-11 h-11 ml-4 flex-shrink-0 flex items-center justify-center bg-white text-black transition-colors disabled:bg-zinc-800 disabled:text-zinc-500 disabled:cursor-not-allowed"
                             aria-label="Clone website"
                         >
-                            <ArrowRightIcon className="h-5 h-5" />
+                            {isLoading ? <SpinnerIcon className="h-5 w-5" /> : <ArrowRightIcon className="h-5 h-5" />}
                         </button>
                     </div>
                 )}

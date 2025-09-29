@@ -181,9 +181,10 @@ export default {
   }
 };
 
-// Using a global-like variable is a simple way to pass the initial prompt 
+// Using global-like variables is a simple way to pass initial data 
 // from the homepage to the workspace without complex state management across routes.
 let initialPromptForWorkspace: string | undefined = undefined;
+let initialImageForWorkspace: File | null = null;
 
 const Workspace: React.FC = () => {
   const [isDrawerOpen, setDrawerOpen] = useState(false)
@@ -227,9 +228,10 @@ const Workspace: React.FC = () => {
 
   // Send initial prompt after launch
   useEffect(() => {
-    if (initialPromptForWorkspace) {
-      sendMessage(initialPromptForWorkspace, null)
+    if (initialPromptForWorkspace || initialImageForWorkspace) {
+      sendMessage(initialPromptForWorkspace || '', initialImageForWorkspace)
       initialPromptForWorkspace = undefined // Reset after sending
+      initialImageForWorkspace = null;
     }
   }, [sendMessage])
 
@@ -421,8 +423,9 @@ const MainApplication: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
 
-  const handleLaunchWorkspace = useCallback((prompt?: string) => {
+  const handleLaunchWorkspace = useCallback((prompt?: string, image?: File | null) => {
       initialPromptForWorkspace = prompt;
+      initialImageForWorkspace = image ?? null;
       if (!location.pathname.startsWith('/w')) {
           navigate('/w');
       }
