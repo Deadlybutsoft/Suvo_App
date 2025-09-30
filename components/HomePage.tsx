@@ -108,7 +108,7 @@ export const HomePage: React.FC<HomePageProps> = ({ onLaunchWorkspace }) => {
             <main className="relative flex-grow flex flex-col items-center justify-center text-center w-full max-w-4xl mx-auto z-10 px-4 pt-10 pb-8">
               <button 
                 onClick={() => onLaunchWorkspace()} 
-                className="mb-8 px-4 py-2 bg-yellow-400 text-black rounded-md hover:bg-yellow-500 transition-colors font-semibold text-sm"
+                className="mb-8 px-4 py-2 bg-transparent border border-yellow-400 text-white rounded-md hover:bg-yellow-400/20 transition-colors font-semibold text-sm"
               >
                 DEV MODE: Launch Workspace
               </button>
