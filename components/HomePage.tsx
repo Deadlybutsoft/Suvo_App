@@ -112,24 +112,24 @@ export const HomePage: React.FC<HomePageProps> = ({ onLaunchWorkspace }) => {
               >
                 DEV MODE: Launch Workspace
               </button>
-              <h1 className="text-4xl sm:text-5xl md:text-6xl font-extrabold tracking-tighter text-white" style={{ textShadow: '0 2px 10px rgba(0,0,0,0.7)' }}>
-                Build <span className="underline decoration-wavy decoration-yellow-400 underline-offset-8">Real Apps</span>. Fast as Hell.
+              <h1 className="text-4xl sm:text-5xl md:text-6xl font-extrabold tracking-tighter text-white">
+                Build <span className="bg-yellow-400 text-black px-2 rounded-sm">Real Apps</span>. Fast as Hell.
               </h1>
-              <p className="mt-4 text-xl text-zinc-200 max-w-2xl" style={{ textShadow: '0 1px 6px rgba(0,0,0,0.8)' }}>
-                Suvo makes ideas go live: apps, functions, <span className="text-white font-medium">integrations</span>, no fluff.
+              <p className="mt-4 text-xl text-zinc-200 max-w-2xl">
+                Suvo makes ideas go live: apps, functions, <span className="text-yellow-400 font-medium">integrations</span>, no fluff.
               </p>
 
-              <div className="flex items-center gap-2 mt-12 mb-6">
+              <div className="flex items-center gap-1 p-1 mt-12 mb-6 bg-black/20 border border-zinc-700 rounded-lg backdrop-blur-sm">
                 <button 
                     onClick={() => setMode('clone')}
-                    className={`flex items-center gap-2 px-6 py-3 text-base font-semibold transition-colors rounded-md border border-zinc-400 ${mode === 'clone' ? 'bg-white text-black' : 'text-zinc-400 hover:text-white bg-black/20 backdrop-blur-sm'}`}
+                    className={`flex-1 flex items-center justify-center gap-2 px-5 py-2.5 text-base font-semibold transition-colors rounded-md whitespace-nowrap ${mode === 'clone' ? 'bg-white text-black' : 'text-zinc-300 hover:bg-white/10'}`}
                 >
                     <LinkIcon className="w-5 h-5" />
                     Clone a Site
                 </button>
                 <button 
                     onClick={() => setMode('prompt')}
-                    className={`flex items-center gap-2 px-6 py-3 text-base font-semibold transition-colors rounded-md border border-zinc-400 ${mode === 'prompt' ? 'bg-white text-black' : 'text-zinc-400 hover:text-white bg-black/20 backdrop-blur-sm'}`}
+                    className={`flex-1 flex items-center justify-center gap-2 px-5 py-2.5 text-base font-semibold transition-colors rounded-md whitespace-nowrap ${mode === 'prompt' ? 'bg-white text-black' : 'text-zinc-300 hover:bg-white/10'}`}
                 >
                     <SparklesIcon className="w-5 h-5" />
                     Write Prompt
