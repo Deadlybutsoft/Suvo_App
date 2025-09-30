@@ -47,7 +47,7 @@ export const Header: React.FC<HeaderProps> = ({
           <h1 className="text-2xl font-bold text-white select-none font-logo">Suvo</h1>
         </Link>
         <span className="text-zinc-700 select-none">/</span>
-        <span className="text-lg font-medium text-white select-none">{projectName}</span>
+        <span className="text-lg font-medium text-zinc-400 select-none">{projectName}</span>
       </div>
       <div className="flex items-center gap-2">
         <div className="relative" ref={integrationsMenuRef}>
