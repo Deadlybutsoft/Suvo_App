@@ -64,7 +64,7 @@ export const ImagePicker: React.FC<{ onSelectImages: (files: File[]) => void }> 
       setHasMore(!!data.continue);
       setOffset(prev => prev + 20);
     } catch (error) {
-      // FIX: The 'error' object in a catch block is of type 'unknown' and cannot be directly concatenated with a string. It must be explicitly converted.
+      // FIX: The 'error' object in a catch block is of type 'unknown' and cannot be directly concatenated with a string. It must be explicitly converted to a string for safe logging.
       console.error("Error fetching images from Wikimedia: " + String(error));
     } finally {
       setIsLoading(false);

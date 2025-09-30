@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { StopIcon, PlusIcon, CloseIcon, ArrowRightIcon, SwatchIcon, PhotoIcon, CheckIcon } from './icons/index';
+import { StopIcon, PlusIcon, CloseIcon, ArrowRightIcon, CreatorKitIcon, PhotoIcon, CheckIcon } from './icons/index';
 import { AiStatus, OperationMode } from '../types';
 import { CreatorKit } from './creator-kit/CreatorKit';
 
@@ -212,7 +212,7 @@ export const ChatInput: React.FC<ChatInputProps> = ({
                 aria-label="Open Creator Kit"
                 title="Creator Kit"
             >
-                <SwatchIcon className="h-5 w-5" />
+                <CreatorKitIcon className="h-6 w-6" />
             </button>
           </div>
           

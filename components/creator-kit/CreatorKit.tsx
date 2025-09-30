@@ -4,7 +4,7 @@ import { IconPicker } from './IconPicker';
 import { FontPicker } from './FontPicker';
 import { ImageCreator } from './ImageCreator';
 import { ImagePicker } from './ImagePicker';
-import { SwatchIcon, PuzzlePieceIcon, SparklesIcon, FontIcon, ArrowLeftIcon, CloseIcon, ChevronRightIcon, PhotoIcon } from '../icons';
+import { SlidersIcon, IntegrationsIcon, PhotoIcon, FontIcon, ArrowLeftIcon, CloseIcon, ChevronRightIcon } from '../icons';
 
 interface CreatorKitProps {
   onAddToPrompt: (text: string) => void;
@@ -17,10 +17,10 @@ interface CreatorKitProps {
 type KitTab = 'color' | 'icon' | 'font' | 'image-create';
 
 const TOOLS: { id: KitTab; label: string; icon: React.FC<{className?: string}> }[] = [
-    { id: 'color', label: 'Color Picker', icon: SwatchIcon },
-    { id: 'icon', label: 'Icon Picker', icon: PuzzlePieceIcon },
+    { id: 'color', label: 'Color Picker', icon: SlidersIcon },
+    { id: 'icon', label: 'Icon Picker', icon: IntegrationsIcon },
     { id: 'font', label: 'Font Picker', icon: FontIcon },
-    { id: 'image-create', label: 'Create Image', icon: SparklesIcon },
+    { id: 'image-create', label: 'Create Image', icon: PhotoIcon },
 ];
 
 export const CreatorKit: React.FC<CreatorKitProps> = ({ onAddToPrompt, onAddImages, onClose, openAIAPIKey, onOpenSettings }) => {

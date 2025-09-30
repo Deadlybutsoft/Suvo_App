@@ -60,8 +60,7 @@ export const ImageCreator: React.FC<ImageCreatorProps> = ({ onSelectImages, open
             const images = await generateImage(prompt, { numberOfImages: numImages, aspectRatio }, openAIAPIKey);
             setGeneratedImages(images);
         } catch (err) {
-            // FIX: The 'err' object from a catch block is of type 'unknown'.
-            // We must check if it's an instance of Error before accessing .message.
+            // FIX: The 'err' object from a catch block is of type 'unknown'. Safely handle this by checking if it's an instance of Error before accessing the 'message' property.
             setError(err instanceof Error ? err.message : 'An unexpected error occurred.');
         } finally {
             setIsLoading(false);
