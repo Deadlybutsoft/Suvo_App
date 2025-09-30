@@ -362,7 +362,18 @@ const Workspace: React.FC = () => {
         />
         <main className="flex-1 flex overflow-hidden pt-16">
           <ResizablePanel isLeftPanelHidden={isApiPanelHidden}>
-            <ChatPanel messages={messages} onSendMessage={sendMessage} aiStatus={aiStatus} stopGeneration={stopGeneration} onRestoreFileSystem={handleRestoreFileSystem} onClearChat={handleClearChat} operationMode={operationMode} onSetOperationMode={setOperationMode} />
+            <ChatPanel 
+              messages={messages} 
+              onSendMessage={sendMessage} 
+              aiStatus={aiStatus} 
+              stopGeneration={stopGeneration} 
+              onRestoreFileSystem={handleRestoreFileSystem} 
+              onClearChat={handleClearChat} 
+              operationMode={operationMode} 
+              onSetOperationMode={setOperationMode} 
+              openAIAPIKey={openAIAPIKey}
+              onOpenSettings={handleOpenSettings}
+            />
             <MainDisplayPanel fileSystem={activeProject.fileSystem} activeFile={activeFile} onActiveFileChange={setActiveFile} theme={'dark'} isPanelHidden={isApiPanelHidden} togglePanel={toggleApiPanel} />
           </ResizablePanel>
         </main>

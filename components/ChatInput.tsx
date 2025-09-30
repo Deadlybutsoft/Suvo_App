@@ -9,6 +9,8 @@ interface ChatInputProps {
   stopGeneration: () => void;
   operationMode: OperationMode;
   onSetOperationMode: (mode: OperationMode) => void;
+  openAIAPIKey: string | null;
+  onOpenSettings: () => void;
 }
 
 const fileToUrl = (file: File): Promise<string> => {
@@ -25,6 +27,8 @@ export const ChatInput: React.FC<ChatInputProps> = ({
     stopGeneration,
     operationMode,
     onSetOperationMode,
+    openAIAPIKey,
+    onOpenSettings,
 }) => {
   const [prompt, setPrompt] = useState('');
   const [images, setImages] = useState<File[]>([]);
@@ -36,8 +40,8 @@ export const ChatInput: React.FC<ChatInputProps> = ({
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const addMenuRef = useRef<HTMLDivElement>(null);
-  const kitButtonRef = useRef<HTMLButtonElement>(null);
   const kitPopoverRef = useRef<HTMLDivElement>(null);
+  const kitButtonRef = useRef<HTMLButtonElement>(null);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -120,6 +124,8 @@ export const ChatInput: React.FC<ChatInputProps> = ({
                 onAddToPrompt={(text) => setPrompt(p => p ? `${p}\n${text}`: text)}
                 onAddImages={handleAddImagesFromKit}
                 onClose={() => setCreatorKitOpen(false)}
+                openAIAPIKey={openAIAPIKey}
+                onOpenSettings={onOpenSettings}
             />
         )}
       </div>
@@ -189,6 +195,7 @@ export const ChatInput: React.FC<ChatInputProps> = ({
                       <span>ChatGPT 5</span>
                       {operationMode === 'chatgpt-5' && <CheckIcon className="w-4 h-4" />}
                     </button>
+                    <div className="!my-1 border-t border-zinc-800"></div>
                      <button onClick={() => { onSetOperationMode('chat'); setAddMenuOpen(false); }} className={`w-full flex items-center justify-between px-2 py-1.5 text-sm text-left rounded-md transition-colors ${operationMode === 'chat' ? 'bg-zinc-700 text-white' : 'text-zinc-300 hover:bg-zinc-800'}`}>
                       <span>Chat Mode</span>
                       {operationMode === 'chat' && <CheckIcon className="w-4 h-4" />}
@@ -197,8 +204,15 @@ export const ChatInput: React.FC<ChatInputProps> = ({
                 </div>
               )}
             </div>
-            <button ref={kitButtonRef} onClick={() => setCreatorKitOpen(p => !p)} className={`w-11 h-11 flex items-center justify-center transition-all duration-300 text-zinc-300 hover:text-white disabled:opacity-50 rounded-md ${isCreatorKitOpen ? 'bg-zinc-800' : 'bg-zinc-900 hover:bg-zinc-800 border border-zinc-600'}`} disabled={isGenerating} aria-label="Open Creator Kit" title="Creator Kit">
-              <SwatchIcon className="h-5 w-5" />
+            <button
+                ref={kitButtonRef}
+                onClick={() => setCreatorKitOpen(prev => !prev)}
+                className={`w-11 h-11 flex items-center justify-center transition-all duration-300 text-zinc-300 hover:text-white disabled:opacity-50 rounded-md ${isCreatorKitOpen ? 'bg-zinc-800' : 'bg-zinc-900 hover:bg-zinc-800 border border-zinc-600'}`}
+                disabled={isGenerating}
+                aria-label="Open Creator Kit"
+                title="Creator Kit"
+            >
+                <SwatchIcon className="h-5 w-5" />
             </button>
           </div>
           

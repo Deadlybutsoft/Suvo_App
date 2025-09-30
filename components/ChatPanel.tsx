@@ -13,6 +13,8 @@ interface ChatPanelProps {
   onClearChat: () => boolean;
   operationMode: OperationMode;
   onSetOperationMode: (mode: OperationMode) => void;
+  openAIAPIKey: string | null;
+  onOpenSettings: () => void;
 }
 
 export const ChatPanel: React.FC<ChatPanelProps> = ({ 
@@ -24,6 +26,8 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
     onClearChat,
     operationMode,
     onSetOperationMode,
+    openAIAPIKey,
+    onOpenSettings,
 }) => {
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
@@ -62,6 +66,8 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
             stopGeneration={stopGeneration}
             operationMode={operationMode}
             onSetOperationMode={onSetOperationMode}
+            openAIAPIKey={openAIAPIKey}
+            onOpenSettings={onOpenSettings}
         />
       </div>
     </div>

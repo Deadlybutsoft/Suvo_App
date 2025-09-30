@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { generateImage, AspectRatio } from '../../services/gemini';
+import { generateImage, AspectRatio } from '../../services/openai';
 import { SpinnerIcon, CheckIcon, SparklesIcon, ChevronDownIcon } from '../icons';
 
 const urlToDataFile = async (base64: string, filename: string): Promise<File> => {
@@ -10,13 +10,17 @@ const urlToDataFile = async (base64: string, filename: string): Promise<File> =>
 
 const aspectRatios: { label: string; value: AspectRatio }[] = [
     { label: 'Square (1:1)', value: '1:1' },
-    { label: 'Portrait (3:4)', value: '3:4' },
-    { label: 'Standard (4:3)', value: '4:3' },
-    { label: 'Tall (9:16)', value: '9:16' },
     { label: 'Widescreen (16:9)', value: '16:9' },
+    { label: 'Tall (9:16)', value: '9:16' },
 ];
 
-export const ImageCreator: React.FC<{ onSelectImages: (files: File[]) => void; }> = ({ onSelectImages }) => {
+interface ImageCreatorProps {
+    onSelectImages: (files: File[]) => void;
+    openAIAPIKey: string | null;
+    onOpenSettings: () => void;
+}
+
+export const ImageCreator: React.FC<ImageCreatorProps> = ({ onSelectImages, openAIAPIKey, onOpenSettings }) => {
     const [prompt, setPrompt] = useState('');
     const [aspectRatio, setAspectRatio] = useState<AspectRatio>('1:1');
     const [numImages, setNumImages] = useState(1);
@@ -41,16 +45,24 @@ export const ImageCreator: React.FC<{ onSelectImages: (files: File[]) => void; }
 
     const handleGenerate = async () => {
         if (!prompt.trim()) return;
+
+        if (!openAIAPIKey) {
+            setError("OpenAI API key is missing. Please add it in Settings > API Keys.");
+            onOpenSettings();
+            return;
+        }
+
         setIsLoading(true);
         setError(null);
         setGeneratedImages([]);
         setSelectedImages(new Set());
         try {
-            const images = await generateImage(prompt, { numberOfImages: numImages, aspectRatio });
+            const images = await generateImage(prompt, { numberOfImages: numImages, aspectRatio }, openAIAPIKey);
             setGeneratedImages(images);
         } catch (err) {
-            // FIX: Check if err is an instance of Error to safely access the message property.
-            setError(err instanceof Error ? err.message : String(err));
+            // FIX: The 'err' object from a catch block is of type 'unknown'.
+            // We must check if it's an instance of Error before accessing .message.
+            setError(err instanceof Error ? err.message : 'An unexpected error occurred.');
         } finally {
             setIsLoading(false);
         }

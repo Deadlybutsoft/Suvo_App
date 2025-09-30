@@ -64,8 +64,8 @@ export const ImagePicker: React.FC<{ onSelectImages: (files: File[]) => void }> 
       setHasMore(!!data.continue);
       setOffset(prev => prev + 20);
     } catch (error) {
-      // FIX: Explicitly convert the unknown 'error' object to a string to prevent a potential type error.
-      console.error("Error fetching images from Wikimedia:", String(error));
+      // FIX: The 'error' object in a catch block is of type 'unknown' and cannot be directly concatenated with a string. It must be explicitly converted.
+      console.error("Error fetching images from Wikimedia: " + String(error));
     } finally {
       setIsLoading(false);
     }

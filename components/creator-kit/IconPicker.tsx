@@ -14,16 +14,19 @@ interface IconifyIcon {
   prefix: string;
 }
 
+const SEARCH_LIMIT = 96;
+
 export const IconPicker: React.FC<{ onSelectIcon: (svg: string) => void; }> = ({ onSelectIcon }) => {
   const [query, setQuery] = useState('');
   const [results, setResults] = useState<IconifyIcon[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [isFetchingIcon, setIsFetchingIcon] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const debouncedQuery = useDebounce(query, 300);
   const abortControllerRef = useRef<AbortController | null>(null);
 
   const searchIcons = useCallback(async (searchQuery: string) => {
-    if (!searchQuery) {
+    if (!searchQuery || searchQuery.length < 2) {
       setResults([]);
       return;
     }
@@ -37,15 +40,28 @@ export const IconPicker: React.FC<{ onSelectIcon: (svg: string) => void; }> = ({
     setError(null);
 
     try {
-      const response = await fetch(`https://api.iconify.design/search?query=${searchQuery}&limit=99`, {
+      const response = await fetch(`https://api.iconify.design/search?query=${searchQuery}&limit=${SEARCH_LIMIT}`, {
         signal: abortControllerRef.current.signal,
       });
       if (!response.ok) throw new Error('Failed to fetch icons');
       const data = await response.json();
-      setResults(data.icons || []);
+      
+      const icons: IconifyIcon[] = data.icons || [];
+      
+      // Prioritize heroicons
+      icons.sort((a, b) => {
+          const aIsHero = a.prefix === 'heroicons';
+          const bIsHero = b.prefix === 'heroicons';
+          if (aIsHero && !bIsHero) return -1;
+          if (!aIsHero && bIsHero) return 1;
+          return 0;
+      });
+
+      setResults(icons);
     } catch (err) {
       if (err instanceof Error && err.name !== 'AbortError') {
         setError('Could not fetch icons. Please try again.');
+        console.error("Icon search error:", err);
       }
     } finally {
       setIsLoading(false);
@@ -62,22 +78,38 @@ export const IconPicker: React.FC<{ onSelectIcon: (svg: string) => void; }> = ({
   }, [debouncedQuery, searchIcons]);
   
   const handleIconClick = async (prefix: string, name: string) => {
+    setIsFetchingIcon(true);
     try {
       const response = await fetch(`https://api.iconify.design/${prefix}/${name}.svg`);
       if (!response.ok) throw new Error('Failed to fetch SVG');
+      
       let svgText = await response.text();
-      // Clean up SVG for better compatibility with TailwindCSS
-      svgText = svgText.replace(/width=".*?"/, '').replace(/height=".*?"/, '').replace(/class=".*?"/, '');
-      svgText = svgText.replace('<svg ', '<svg class="w-5 h-5" ');
+
+      // Clean the SVG attributes as per the guide
+      svgText = svgText
+        .replace(/ width="[^"]*"/, '')
+        .replace(/ height="[^"]*"/, '')
+        .replace(/ class="[^"]*"/, '');
+      
       onSelectIcon(svgText);
     } catch (error) {
         alert('Could not retrieve icon SVG. Please try again.');
         console.error("Icon fetch error:", error);
+    } finally {
+        setIsFetchingIcon(false);
     }
   };
 
   return (
-    <div className="h-full flex flex-col">
+    <div className="h-full flex flex-col relative">
+       {isFetchingIcon && (
+        <div className="absolute inset-0 bg-black/70 z-10 flex items-center justify-center">
+          <div className="text-center">
+            <SpinnerIcon className="w-8 h-8 text-white mx-auto" />
+            <p className="mt-2 text-white font-medium">Fetching Icon...</p>
+          </div>
+        </div>
+      )}
       <div className="p-4 border-b border-zinc-800">
         <input
           type="text"
@@ -112,7 +144,7 @@ export const IconPicker: React.FC<{ onSelectIcon: (svg: string) => void; }> = ({
                                 <img
                                     src={`https://api.iconify.design/${icon.prefix}/${icon.name}.svg?color=white`}
                                     alt={icon.name}
-                                    className="w-3/5 h-3/5"
+                                    className="w-full h-full object-contain"
                                     loading="lazy"
                                 />
                             </button>
