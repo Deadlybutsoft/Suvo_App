@@ -156,40 +156,38 @@ export const ChatInput: React.FC<ChatInputProps> = ({
                 <PlusIcon className={`h-5 w-5 transition-transform duration-300 ease-in-out ${isAddMenuOpen ? 'rotate-45' : ''}`} />
               </button>
               {isAddMenuOpen && (
-                <div className="absolute bottom-full left-0 mb-2 w-64 bg-black border border-zinc-700 shadow-xl z-10 p-2">
-                  <div className="space-y-1">
-                    <button onClick={() => { fileInputRef.current?.click(); setAddMenuOpen(false); }} className="w-full flex items-center gap-3 p-2 text-sm text-left text-slate-300 hover:bg-zinc-800 transition-colors">
-                      <PhotoIcon className="w-5 h-5"/> <span>Attach Image</span>
-                    </button>
-                  </div>
-                  <div className="border-t border-zinc-700 my-2"></div>
-                  <div className="px-2 pb-1">
-                      <p className="text-xs text-zinc-500 font-semibold uppercase tracking-wider">Model</p>
-                  </div>
+                <div className="absolute bottom-full left-0 mb-2 w-56 bg-zinc-950 border border-zinc-800 shadow-2xl z-10 p-1.5 rounded-lg">
                   <div className="space-y-1">
                     <button 
+                      onClick={() => { fileInputRef.current?.click(); setAddMenuOpen(false); }} 
+                      className="w-full flex items-center gap-3 px-2 py-1.5 text-sm text-left text-zinc-200 hover:bg-zinc-800 transition-colors rounded-md"
+                    >
+                      <PhotoIcon className="w-4 h-4 text-zinc-400"/> 
+                      <span>Attach Image</span>
+                    </button>
+                    
+                    <div className="!my-1 border-t border-zinc-800"></div>
+                    
+                    <button 
                       onClick={() => { onSetOperationMode('gemini-2.5-flash'); setAddMenuOpen(false); }}
-                      className={`w-full flex items-center justify-between gap-3 p-2 text-sm text-left rounded-none transition-colors ${operationMode === 'gemini-2.5-flash' ? 'bg-zinc-800 text-white' : 'text-slate-300 hover:bg-zinc-800'}`}
+                      className={`w-full flex items-center justify-between px-2 py-1.5 text-sm text-left rounded-md transition-colors ${operationMode === 'gemini-2.5-flash' ? 'bg-zinc-700 text-white' : 'text-zinc-300 hover:bg-zinc-800'}`}
                     >
                       <span>Gemini 2.5 Flash</span>
-                      {operationMode === 'gemini-2.5-flash' && <CheckIcon className="w-4 h-4 text-white" />}
+                      {operationMode === 'gemini-2.5-flash' && <CheckIcon className="w-4 h-4" />}
                     </button>
                     <button 
                       onClick={() => { onSetOperationMode('chatgpt-5'); setAddMenuOpen(false); }}
-                      className={`w-full flex items-center justify-between gap-3 p-2 text-sm text-left rounded-none transition-colors ${operationMode === 'chatgpt-5' ? 'bg-zinc-800 text-white' : 'text-slate-300 hover:bg-zinc-800'}`}
+                      className={`w-full flex items-center justify-between px-2 py-1.5 text-sm text-left rounded-md transition-colors ${operationMode === 'chatgpt-5' ? 'bg-zinc-700 text-white' : 'text-zinc-300 hover:bg-zinc-800'}`}
                     >
-                      <span className="flex items-center gap-2">
-                        ChatGPT 5 
-                      </span>
-                      {operationMode === 'chatgpt-5' && <CheckIcon className="w-4 h-4 text-white" />}
+                      <span>ChatGPT 5</span>
+                      {operationMode === 'chatgpt-5' && <CheckIcon className="w-4 h-4" />}
                     </button>
-                     <div className="border-t border-zinc-700 my-1 mx-2"></div>
                      <button 
                       onClick={() => { onSetOperationMode('chat'); setAddMenuOpen(false); }}
-                      className={`w-full flex items-center justify-between gap-3 p-2 text-sm text-left rounded-none transition-colors ${operationMode === 'chat' ? 'bg-zinc-800 text-white' : 'text-slate-300 hover:bg-zinc-800'}`}
+                      className={`w-full flex items-center justify-between px-2 py-1.5 text-sm text-left rounded-md transition-colors ${operationMode === 'chat' ? 'bg-zinc-700 text-white' : 'text-zinc-300 hover:bg-zinc-800'}`}
                     >
                       <span>Chat Mode</span>
-                      {operationMode === 'chat' && <CheckIcon className="w-4 h-4 text-white" />}
+                      {operationMode === 'chat' && <CheckIcon className="w-4 h-4" />}
                     </button>
                   </div>
                 </div>
