@@ -6,7 +6,7 @@ import { SuvoChatSuggestions } from './SuvoChatSuggestions';
 
 interface ChatPanelProps {
   messages: MessageType[];
-  onSendMessage: (prompt: string, image: File | null) => void;
+  onSendMessage: (prompt: string, images: File[]) => void;
   aiStatus: AiStatus;
   stopGeneration: () => void;
   onRestoreFileSystem: (fs: FileSystem) => void;

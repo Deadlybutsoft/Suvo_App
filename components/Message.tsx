@@ -128,9 +128,11 @@ const CodeVersionBlockSkeleton: React.FC = () => (
 const UserMessage: React.FC<{ message: MessageType }> = ({ message }) => {
     return (
         <div className="bg-zinc-900 border border-zinc-700 px-4 py-3 rounded-lg">
-            {message.imageUrl && (
-                <div className="mb-2">
-                    <img src={message.imageUrl} alt="User upload" className="max-w-full h-auto max-h-64 rounded-lg" />
+            {message.imageUrls && message.imageUrls.length > 0 && (
+                <div className="mb-2 flex flex-wrap gap-2">
+                    {message.imageUrls.map((url, index) => (
+                         <img key={index} src={url} alt={`User upload ${index + 1}`} className="max-w-full h-auto max-h-40 rounded-md" />
+                    ))}
                 </div>
             )}
             

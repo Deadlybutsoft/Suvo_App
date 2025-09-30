@@ -1,14 +1,23 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { StopIcon, PlusIcon, CloseIcon, ArrowRightIcon, GlobeIcon, PhotoIcon, CheckIcon } from './icons/index';
+import { StopIcon, PlusIcon, CloseIcon, ArrowRightIcon, SwatchIcon, PhotoIcon, CheckIcon } from './icons/index';
 import { AiStatus, OperationMode } from '../types';
+import { CreatorKit } from './creator-kit/CreatorKit';
 
 interface ChatInputProps {
-  onSendMessage: (prompt: string, image: File | null) => void;
+  onSendMessage: (prompt: string, images: File[]) => void;
   aiStatus: AiStatus;
   stopGeneration: () => void;
   operationMode: OperationMode;
   onSetOperationMode: (mode: OperationMode) => void;
 }
+
+const fileToUrl = (file: File): Promise<string> => {
+  return new Promise((resolve) => {
+    const reader = new FileReader();
+    reader.onload = (e) => resolve(e.target?.result as string);
+    reader.readAsDataURL(file);
+  });
+};
 
 export const ChatInput: React.FC<ChatInputProps> = ({ 
     onSendMessage, 
@@ -18,19 +27,26 @@ export const ChatInput: React.FC<ChatInputProps> = ({
     onSetOperationMode,
 }) => {
   const [prompt, setPrompt] = useState('');
-  const [image, setImage] = useState<File | null>(null);
-  const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const [images, setImages] = useState<File[]>([]);
+  const [imagePreviews, setImagePreviews] = useState<string[]>([]);
   
   const [isAddMenuOpen, setAddMenuOpen] = useState(false);
+  const [isCreatorKitOpen, setCreatorKitOpen] = useState(false);
   
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const addMenuRef = useRef<HTMLDivElement>(null);
+  const kitButtonRef = useRef<HTMLButtonElement>(null);
+  const kitPopoverRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-       if (addMenuRef.current && !addMenuRef.current.contains(event.target as Node)) {
+      const target = event.target as Node;
+      if (addMenuRef.current && !addMenuRef.current.contains(target)) {
         setAddMenuOpen(false);
+      }
+      if (kitPopoverRef.current && !kitPopoverRef.current.contains(target) && kitButtonRef.current && !kitButtonRef.current.contains(target)) {
+        setCreatorKitOpen(false);
       }
     };
     document.addEventListener('mousedown', handleClickOutside);
@@ -38,16 +54,12 @@ export const ChatInput: React.FC<ChatInputProps> = ({
   }, []);
 
   useEffect(() => {
-    // Auto-resize textarea.
-    // We use requestAnimationFrame to prevent a ResizeObserver loop error.
-    // This synchronizes the resize with the browser's rendering cycle,
-    // which is a more robust way to prevent layout-related race conditions.
     const textarea = textareaRef.current;
     if (textarea) {
       const animationFrameId = requestAnimationFrame(() => {
         textarea.style.height = 'auto';
         const scrollHeight = textarea.scrollHeight;
-        const maxHeight = 200; // Approx 8 lines
+        const maxHeight = 200;
         textarea.style.height = `${Math.min(scrollHeight, maxHeight)}px`;
       });
       return () => cancelAnimationFrame(animationFrameId);
@@ -56,34 +68,35 @@ export const ChatInput: React.FC<ChatInputProps> = ({
 
   useEffect(() => {
     return () => {
-      if (imagePreview) URL.revokeObjectURL(imagePreview);
+      imagePreviews.forEach(URL.revokeObjectURL);
     };
-  }, [imagePreview]);
+  }, [imagePreviews]);
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      if (imagePreview) URL.revokeObjectURL(imagePreview);
-      setImage(file);
-      setImagePreview(URL.createObjectURL(file));
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files) {
+      const newFiles = Array.from(e.target.files);
+      const newPreviews = await Promise.all(newFiles.map(fileToUrl));
+      setImages(prev => [...prev, ...newFiles]);
+      setImagePreviews(prev => [...prev, ...newPreviews]);
     }
     if (e.target) e.target.value = '';
   };
   
-  const handleRemoveImage = () => {
-    if (imagePreview) URL.revokeObjectURL(imagePreview);
-    setImage(null);
-    setImagePreview(null);
+  const handleRemoveImage = (indexToRemove: number) => {
+    URL.revokeObjectURL(imagePreviews[indexToRemove]);
+    setImages(prev => prev.filter((_, i) => i !== indexToRemove));
+    setImagePreviews(prev => prev.filter((_, i) => i !== indexToRemove));
   };
 
   const isGenerating = aiStatus === 'thinking' || aiStatus === 'streaming';
 
   const handleSend = () => {
-    if (isGenerating || (!prompt.trim() && !image)) return;
-
-    onSendMessage(prompt, image);
+    if (isGenerating || (!prompt.trim() && images.length === 0)) return;
+    onSendMessage(prompt, images);
     setPrompt('');
-    handleRemoveImage();
+    imagePreviews.forEach(URL.revokeObjectURL);
+    setImages([]);
+    setImagePreviews([]);
   };
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
@@ -93,27 +106,43 @@ export const ChatInput: React.FC<ChatInputProps> = ({
     }
   };
 
+  const handleAddImagesFromKit = async (files: File[]) => {
+      const newPreviews = await Promise.all(files.map(fileToUrl));
+      setImages(prev => [...prev, ...files]);
+      setImagePreviews(prev => [...prev, ...newPreviews]);
+  };
+
   return (
     <div className="relative bg-black border border-zinc-400 flex flex-col text-white rounded-lg">
+      <div ref={kitPopoverRef}>
+        {isCreatorKitOpen && (
+            <CreatorKit 
+                onAddToPrompt={(text) => setPrompt(p => p ? `${p}\n${text}`: text)}
+                onAddImages={handleAddImagesFromKit}
+                onClose={() => setCreatorKitOpen(false)}
+            />
+        )}
+      </div>
       <input 
         type="file" 
         ref={fileInputRef} 
         onChange={handleFileChange} 
         className="hidden" 
         accept="image/*"
+        multiple
       />
       
-      {imagePreview && (
+      {imagePreviews.length > 0 && (
         <div className="p-3 border-b border-zinc-700">
-            <div className="relative inline-block">
-                <img src={imagePreview} alt="Upload preview" className="h-24 w-auto max-w-full object-contain rounded-md" />
-                <button
-                    onClick={handleRemoveImage}
-                    className="absolute -top-2 -right-2 bg-zinc-900/80 hover:bg-zinc-800 text-white p-1 rounded-full transition-all"
-                    aria-label="Remove image"
-                >
-                    <CloseIcon className="w-4 h-4" />
-                </button>
+            <div className="flex flex-wrap gap-3">
+            {imagePreviews.map((preview, index) => (
+                <div key={index} className="relative inline-block">
+                    <img src={preview} alt={`Upload preview ${index + 1}`} className="h-24 w-auto max-w-full object-contain rounded-md" />
+                    <button onClick={() => handleRemoveImage(index)} className="absolute -top-2 -right-2 bg-zinc-900/80 hover:bg-zinc-800 text-white p-1 rounded-full transition-all" aria-label="Remove image">
+                        <CloseIcon className="w-4 h-4" />
+                    </button>
+                </div>
+            ))}
             </div>
         </div>
       )}
@@ -121,12 +150,7 @@ export const ChatInput: React.FC<ChatInputProps> = ({
       {operationMode === 'chat' && (
         <div className="bg-zinc-900 border-b border-zinc-700 p-2 flex items-center justify-between">
           <p className="text-sm font-semibold text-zinc-300 px-2">Chat Mode</p>
-          <button
-            onClick={() => onSetOperationMode('gemini-2.5-flash')}
-            className="p-1 text-zinc-400 hover:text-white hover:bg-zinc-800 rounded-md transition-colors"
-            aria-label="Exit Chat Mode"
-            title="Exit Chat Mode"
-          >
+          <button onClick={() => onSetOperationMode('gemini-2.5-flash')} className="p-1 text-zinc-400 hover:text-white hover:bg-zinc-800 rounded-md transition-colors" aria-label="Exit Chat Mode" title="Exit Chat Mode">
             <CloseIcon className="w-4 h-4" />
           </button>
         </div>
@@ -146,46 +170,26 @@ export const ChatInput: React.FC<ChatInputProps> = ({
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <div ref={addMenuRef} className="relative">
-              <button 
-                onClick={() => setAddMenuOpen(prev => !prev)}
-                className={`w-11 h-11 flex items-center justify-center transition-all duration-300 text-zinc-300 hover:text-white disabled:opacity-50 rounded-md ${isAddMenuOpen ? 'bg-zinc-800' : 'bg-zinc-900 hover:bg-zinc-800 border border-zinc-600'}`}
-                disabled={isGenerating}
-                aria-label={isAddMenuOpen ? 'Close menu' : 'Add content'}
-                title={isAddMenuOpen ? 'Close menu' : 'Add content'}
-              >
+              <button onClick={() => setAddMenuOpen(prev => !prev)} className={`w-11 h-11 flex items-center justify-center transition-all duration-300 text-zinc-300 hover:text-white disabled:opacity-50 rounded-md ${isAddMenuOpen ? 'bg-zinc-800' : 'bg-zinc-900 hover:bg-zinc-800 border border-zinc-600'}`} disabled={isGenerating} aria-label={isAddMenuOpen ? 'Close menu' : 'Add content'} title={isAddMenuOpen ? 'Close menu' : 'Add content'}>
                 <PlusIcon className={`h-5 w-5 transition-transform duration-300 ease-in-out ${isAddMenuOpen ? 'rotate-45' : ''}`} />
               </button>
               {isAddMenuOpen && (
                 <div className="absolute bottom-full left-0 mb-2 w-56 bg-zinc-950 border border-zinc-800 shadow-2xl z-10 p-1.5 rounded-lg">
                   <div className="space-y-1">
-                    <button 
-                      onClick={() => { fileInputRef.current?.click(); setAddMenuOpen(false); }} 
-                      className="w-full flex items-center gap-3 px-2 py-1.5 text-sm text-left text-zinc-200 hover:bg-zinc-800 transition-colors rounded-md"
-                    >
+                    <button onClick={() => { fileInputRef.current?.click(); setAddMenuOpen(false); }} className="w-full flex items-center gap-3 px-2 py-1.5 text-sm text-left text-zinc-200 hover:bg-zinc-800 transition-colors rounded-md">
                       <PhotoIcon className="w-4 h-4 text-zinc-400"/> 
                       <span>Attach Image</span>
                     </button>
-                    
                     <div className="!my-1 border-t border-zinc-800"></div>
-                    
-                    <button 
-                      onClick={() => { onSetOperationMode('gemini-2.5-flash'); setAddMenuOpen(false); }}
-                      className={`w-full flex items-center justify-between px-2 py-1.5 text-sm text-left rounded-md transition-colors ${operationMode === 'gemini-2.5-flash' ? 'bg-zinc-700 text-white' : 'text-zinc-300 hover:bg-zinc-800'}`}
-                    >
+                    <button onClick={() => { onSetOperationMode('gemini-2.5-flash'); setAddMenuOpen(false); }} className={`w-full flex items-center justify-between px-2 py-1.5 text-sm text-left rounded-md transition-colors ${operationMode === 'gemini-2.5-flash' ? 'bg-zinc-700 text-white' : 'text-zinc-300 hover:bg-zinc-800'}`}>
                       <span>Gemini 2.5 Flash</span>
                       {operationMode === 'gemini-2.5-flash' && <CheckIcon className="w-4 h-4" />}
                     </button>
-                    <button 
-                      onClick={() => { onSetOperationMode('chatgpt-5'); setAddMenuOpen(false); }}
-                      className={`w-full flex items-center justify-between px-2 py-1.5 text-sm text-left rounded-md transition-colors ${operationMode === 'chatgpt-5' ? 'bg-zinc-700 text-white' : 'text-zinc-300 hover:bg-zinc-800'}`}
-                    >
+                    <button onClick={() => { onSetOperationMode('chatgpt-5'); setAddMenuOpen(false); }} className={`w-full flex items-center justify-between px-2 py-1.5 text-sm text-left rounded-md transition-colors ${operationMode === 'chatgpt-5' ? 'bg-zinc-700 text-white' : 'text-zinc-300 hover:bg-zinc-800'}`}>
                       <span>ChatGPT 5</span>
                       {operationMode === 'chatgpt-5' && <CheckIcon className="w-4 h-4" />}
                     </button>
-                     <button 
-                      onClick={() => { onSetOperationMode('chat'); setAddMenuOpen(false); }}
-                      className={`w-full flex items-center justify-between px-2 py-1.5 text-sm text-left rounded-md transition-colors ${operationMode === 'chat' ? 'bg-zinc-700 text-white' : 'text-zinc-300 hover:bg-zinc-800'}`}
-                    >
+                     <button onClick={() => { onSetOperationMode('chat'); setAddMenuOpen(false); }} className={`w-full flex items-center justify-between px-2 py-1.5 text-sm text-left rounded-md transition-colors ${operationMode === 'chat' ? 'bg-zinc-700 text-white' : 'text-zinc-300 hover:bg-zinc-800'}`}>
                       <span>Chat Mode</span>
                       {operationMode === 'chat' && <CheckIcon className="w-4 h-4" />}
                     </button>
@@ -193,24 +197,18 @@ export const ChatInput: React.FC<ChatInputProps> = ({
                 </div>
               )}
             </div>
+            <button ref={kitButtonRef} onClick={() => setCreatorKitOpen(p => !p)} className={`w-11 h-11 flex items-center justify-center transition-all duration-300 text-zinc-300 hover:text-white disabled:opacity-50 rounded-md ${isCreatorKitOpen ? 'bg-zinc-800' : 'bg-zinc-900 hover:bg-zinc-800 border border-zinc-600'}`} disabled={isGenerating} aria-label="Open Creator Kit" title="Creator Kit">
+              <SwatchIcon className="h-5 w-5" />
+            </button>
           </div>
           
           <div className="flex items-center">
             {isGenerating ? (
-              <button
-                onClick={stopGeneration}
-                className="w-11 h-11 flex-shrink-0 flex items-center justify-center bg-red-600 hover:bg-red-700 text-white transition-colors rounded-md"
-                aria-label="Stop generation"
-              >
+              <button onClick={stopGeneration} className="w-11 h-11 flex-shrink-0 flex items-center justify-center bg-red-600 hover:bg-red-700 text-white transition-colors rounded-md" aria-label="Stop generation">
                  <StopIcon className="h-5 w-5" />
               </button>
             ) : (
-              <button
-                onClick={handleSend}
-                disabled={isGenerating || (!prompt.trim() && !image)}
-                className="w-11 h-11 flex-shrink-0 flex items-center justify-center bg-white text-black transition-colors disabled:bg-zinc-800 disabled:text-zinc-500 disabled:cursor-not-allowed rounded-md"
-                aria-label="Send message"
-              >
+              <button onClick={handleSend} disabled={isGenerating || (!prompt.trim() && images.length === 0)} className="w-11 h-11 flex-shrink-0 flex items-center justify-center bg-white text-black transition-colors disabled:bg-zinc-800 disabled:text-zinc-500 disabled:cursor-not-allowed rounded-md" aria-label="Send message">
                 <ArrowRightIcon className="h-5 w-5" />
               </button>
             )}

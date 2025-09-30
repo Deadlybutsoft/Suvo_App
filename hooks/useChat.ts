@@ -453,7 +453,7 @@ export const useChat = (
         const messageContent = msg.text;
         if (messageContent) {
            if (msg.role === "user") {
-              if (msg.imageUrl) return; // Skip user messages with images, they are handled separately in the current prompt
+              if (msg.imageUrls) return; // Skip user messages with images, they are handled separately
               history.push({ role: "user", content: messageContent });
            } else {
               history.push({ role: "assistant", content: messageContent });
@@ -468,7 +468,7 @@ export const useChat = (
     const history: Content[] = []
     currentMessages.forEach((msg) => {
       if (!msg.isStreaming && !msg.error && (msg.role === "user" || msg.role === "ai")) {
-        if (msg.role === "user" && msg.imageUrl) return
+        if (msg.role === "user" && msg.imageUrls) return
 
         const messageText = msg.text
 
@@ -484,7 +484,7 @@ export const useChat = (
   }
 
   const sendMessage = useCallback(
-    async (initialPrompt: string, image: File | null) => {
+    async (initialPrompt: string, images: File[]) => {
       const isChatMode = operationMode === 'chat';
       const modelToUse = isChatMode ? 'gemini-2.5-flash' : operationMode;
 
@@ -498,24 +498,29 @@ export const useChat = (
 
       const userMessage: Message = { id: Date.now().toString(), role: "user", text: initialPrompt }
       
-      let imageForNextTurn: { data: string; mimeType: string } | null = null
-      if (image && !isChatMode) { // Images are ignored in chat mode
+      let imagesForNextTurn: { data: string; mimeType: string }[] = [];
+      if (images.length > 0 && !isChatMode) {
         try {
-          userMessage.imageUrl = URL.createObjectURL(image)
-          const { data: base64Data, mimeType } = await convertImageToBase64(image)
-          lastUploadedImageRef.current = { data: base64Data, mimeType }
-          imageForNextTurn = lastUploadedImageRef.current
+          const objectUrls = images.map(URL.createObjectURL);
+          userMessage.imageUrls = objectUrls;
+
+          imagesForNextTurn = await Promise.all(images.map(convertImageToBase64));
+          // Only one image is supported for the [USE_UPLOADED_IMAGE] placeholder for simplicity
+          if (imagesForNextTurn.length > 0) {
+            lastUploadedImageRef.current = imagesForNextTurn[0];
+          }
+
         } catch (error) {
           console.error("Error processing image upload:", error)
           const errorMsg: Message = {
             id: (Date.now() + 1).toString(),
             role: "ai",
-            text: "Sorry, I failed to process the image you uploaded.",
+            text: "Sorry, I failed to process one of the images you uploaded.",
             error: error instanceof Error ? error.message : "Unknown error",
           }
           setMessages((prev) => [...prev, userMessage, errorMsg])
           setAiStatus("idle")
-          if (userMessage.imageUrl) URL.revokeObjectURL(userMessage.imageUrl)
+          if (userMessage.imageUrls) userMessage.imageUrls.forEach(URL.revokeObjectURL);
           return
         }
       }
@@ -547,12 +552,12 @@ export const useChat = (
           const history = buildOpenAIHistory(messages, systemInstruction);
           const userPromptContent: (OpenAI.Chat.Completions.ChatCompletionContentPartText | OpenAI.Chat.Completions.ChatCompletionContentPartImage)[] = [{ type: 'text', text: textPromptContent }];
           
-          if (imageForNextTurn) {
+          imagesForNextTurn.forEach(image => {
             userPromptContent.push({
               type: 'image_url',
-              image_url: { url: `data:${imageForNextTurn.mimeType};base64,${imageForNextTurn.data}` }
+              image_url: { url: `data:${image.mimeType};base64,${image.data}` }
             });
-          }
+          });
           
           history.push({ role: 'user', content: userPromptContent });
           const stream = await openai.chat.completions.create({ model: 'gpt-4o', messages: history, stream: true });
@@ -569,11 +574,10 @@ export const useChat = (
           const ai = new GoogleGenAI({ apiKey: process.env.API_KEY })
           const chatHistory = buildGeminiHistory(messages)
           
-          const promptParts: Part[] = []
-          if (imageForNextTurn) {
-            promptParts.push({ inlineData: { mimeType: imageForNextTurn.mimeType, data: imageForNextTurn.data } });
-          }
-          promptParts.unshift({ text: textPromptContent })
+          const promptParts: Part[] = imagesForNextTurn.map(image => ({
+            inlineData: { mimeType: image.mimeType, data: image.data }
+          }));
+          promptParts.unshift({ text: textPromptContent });
 
           const chat = ai.chats.create({ model: 'gemini-2.5-flash', config: { systemInstruction }, history: chatHistory });
           const stream = await chat.sendMessageStream({ message: promptParts });
@@ -635,8 +639,8 @@ export const useChat = (
         )
       }
 
-      if (userMessage.imageUrl) {
-        URL.revokeObjectURL(userMessage.imageUrl)
+      if (userMessage.imageUrls) {
+        userMessage.imageUrls.forEach(URL.revokeObjectURL);
       }
       setAiStatus("idle")
     },

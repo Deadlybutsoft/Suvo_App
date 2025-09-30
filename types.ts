@@ -15,7 +15,7 @@ export interface Message {
   version?: number;
   error?: string;
   isStreaming?: boolean;
-  imageUrl?: string;
+  imageUrls?: string[];
   previousFileSystem?: FileSystem;
   isExpectingCodeChanges?: boolean;
 }

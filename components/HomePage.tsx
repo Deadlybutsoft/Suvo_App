@@ -14,7 +14,10 @@ export const HomePage: React.FC<HomePageProps> = ({ onLaunchWorkspace }) => {
   const [cloneUrl, setCloneUrl] = useState('');
   const [isLoading, setIsLoading] = useState(false);
 
-  const handleSendMessage = (prompt: string, image: File | null) => {
+  // FIX: Updated function signature to accept an array of files (`File[]`) from ChatInput.
+  // The logic now takes the first image from the array to maintain compatibility with `onLaunchWorkspace`, which expects a single image.
+  const handleSendMessage = (prompt: string, images: File[]) => {
+    const image = images.length > 0 ? images[0] : null;
     const isInputProvided = prompt.trim() !== '' || image !== null;
     onLaunchWorkspace(isInputProvided ? prompt : undefined, image);
   };

@@ -189,7 +189,7 @@ const defaultProject: Project = {
 };
 
 let initialPromptForWorkspace: string | undefined = undefined;
-let initialImageForWorkspace: File | null = null;
+let initialImagesForWorkspace: File[] = [];
 
 const Workspace: React.FC = () => {
   const [isDrawerOpen, setDrawerOpen] = useState(false)
@@ -269,10 +269,10 @@ const Workspace: React.FC = () => {
   }, []);
 
   useEffect(() => {
-    if (initialPromptForWorkspace || initialImageForWorkspace) {
-      sendMessage(initialPromptForWorkspace || '', initialImageForWorkspace)
+    if (initialPromptForWorkspace || initialImagesForWorkspace.length > 0) {
+      sendMessage(initialPromptForWorkspace || '', initialImagesForWorkspace)
       initialPromptForWorkspace = undefined;
-      initialImageForWorkspace = null;
+      initialImagesForWorkspace = [];
     }
   }, [sendMessage]);
 
@@ -346,7 +346,7 @@ const Workspace: React.FC = () => {
   const handleAddIntegration = useCallback((type: IntegrationType) => {
       const integration = INTEGRATIONS.find(i => i.id === type);
       if (!integration) return;
-      sendMessage(`Please integrate ${integration.name}. ${integration.description}`, null);
+      sendMessage(`Please integrate ${integration.name}. ${integration.description}`, []);
       setSelectedIntegration(null);
   }, [sendMessage]);
   
@@ -381,7 +381,7 @@ const MainApplication: React.FC = () => {
 
   const handleLaunchWorkspace = useCallback((prompt?: string, image?: File | null) => {
       initialPromptForWorkspace = prompt;
-      initialImageForWorkspace = image ?? null;
+      initialImagesForWorkspace = image ? [image] : [];
       if (!location.pathname.startsWith('/w')) {
           navigate('/w');
       }
