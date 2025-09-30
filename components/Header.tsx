@@ -5,6 +5,7 @@ import type { IntegrationType } from '../types';
 import { INTEGRATIONS } from './integrations';
 
 interface HeaderProps {
+  projectName: string;
   onMenuClick: () => void;
   onUpgradeClick: () => void;
   onSelectIntegration: (integration: IntegrationType) => void;
@@ -12,6 +13,7 @@ interface HeaderProps {
 }
 
 export const Header: React.FC<HeaderProps> = ({ 
+  projectName,
   onMenuClick, 
   onUpgradeClick, 
   onSelectIntegration,
@@ -40,10 +42,12 @@ export const Header: React.FC<HeaderProps> = ({
 
   return (
     <header className="absolute top-0 left-0 right-0 flex items-center justify-between px-4 h-16 z-30 bg-black border-b border-zinc-700">
-      <div className="flex items-center gap-4">
-        <Link to="/">
-          <h1 className="text-2xl font-bold text-slate-900 dark:text-white select-none font-logo">Suvo</h1>
+      <div className="flex items-center gap-3">
+        <Link to="/" className="flex items-center gap-3">
+          <h1 className="text-2xl font-bold text-white select-none font-logo">Suvo</h1>
         </Link>
+        <span className="text-zinc-700 select-none">/</span>
+        <span className="text-lg font-medium text-white select-none">{projectName}</span>
       </div>
       <div className="flex items-center gap-2">
         <div className="relative" ref={integrationsMenuRef}>
@@ -102,7 +106,7 @@ export const Header: React.FC<HeaderProps> = ({
         
         <button
           onClick={onUpgradeClick}
-          className="text-sm font-semibold bg-white text-black px-5 py-2 rounded-md hover:bg-zinc-200 transition-colors"
+          className="text-sm font-semibold bg-yellow-400 text-black px-5 py-2 rounded-md hover:bg-yellow-500 transition-colors"
         >
           Upgrade
         </button>

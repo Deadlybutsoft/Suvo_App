@@ -183,7 +183,7 @@ export default {
 
 const defaultProject: Project = {
   id: Date.now(),
-  name: "Welcome to Suvo",
+  name: "Welcome",
   fileSystem: initialFileSystem,
   messages: [],
 };
@@ -339,7 +339,13 @@ const Workspace: React.FC = () => {
   return (
     <>
       <div className="relative h-screen w-screen bg-slate-50 dark:bg-zinc-950 text-slate-900 dark:text-white flex flex-col overflow-hidden">
-        <Header onMenuClick={toggleDrawer} onUpgradeClick={handleUpgradeClick} onSelectIntegration={handleSelectIntegration} onDownloadZip={handleDownloadZip} />
+        <Header 
+            projectName={activeProject.name}
+            onMenuClick={toggleDrawer} 
+            onUpgradeClick={handleUpgradeClick} 
+            onSelectIntegration={handleSelectIntegration} 
+            onDownloadZip={handleDownloadZip} 
+        />
         <main className="flex-1 flex overflow-hidden pt-16">
           <ResizablePanel isLeftPanelHidden={isApiPanelHidden}>
             <ChatPanel messages={messages} onSendMessage={sendMessage} aiStatus={aiStatus} stopGeneration={stopGeneration} onRestoreFileSystem={handleRestoreFileSystem} onClearChat={handleClearChat} operationMode={operationMode} onSetOperationMode={setOperationMode} />

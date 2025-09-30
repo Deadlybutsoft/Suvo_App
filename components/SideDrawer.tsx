@@ -56,16 +56,18 @@ export const SideDrawer: React.FC<SideDrawerProps> = ({
   };
 
   const handleConfirmCreate = () => {
-    if (newProjectName.trim()) {
-        onCreateNewProject(newProjectName.trim());
+    const finalName = newProjectName.trim().replace(/\s/g, '');
+    if (finalName) {
+        onCreateNewProject(finalName);
         setNewProjectName('');
         setIsCreatingProject(false);
     }
   };
 
   const handleConfirmRename = () => {
-    if (projectToRename && newProjectNameForRename.trim()) {
-      onRenameProject(projectToRename.id, newProjectNameForRename.trim());
+    const finalName = newProjectNameForRename.trim().replace(/\s/g, '');
+    if (projectToRename && finalName) {
+      onRenameProject(projectToRename.id, finalName);
       setProjectToRename(null);
       setNewProjectNameForRename("");
     }
@@ -121,7 +123,7 @@ export const SideDrawer: React.FC<SideDrawerProps> = ({
               <input
                 type="text"
                 value={newProjectNameForRename}
-                onChange={e => setNewProjectNameForRename(e.target.value)}
+                onChange={e => setNewProjectNameForRename(e.target.value.replace(/\s/g, ''))}
                 onKeyDown={e => e.key === 'Enter' && handleConfirmRename()}
                 className="mt-4 w-full p-2.5 bg-zinc-900 border border-zinc-700 rounded-md text-white placeholder:text-zinc-500 focus:ring-2 focus:ring-white/50 outline-none transition"
                 autoFocus
@@ -150,7 +152,7 @@ export const SideDrawer: React.FC<SideDrawerProps> = ({
             <div>
                 {isCreatingProject ? (
                     <div className="space-y-3 p-2 bg-zinc-900 rounded-lg">
-                        <input type="text" placeholder="Project name..." value={newProjectName} onChange={e => setNewProjectName(e.target.value)} onKeyDown={e => e.key === 'Enter' && handleConfirmCreate()} className="w-full p-2 bg-zinc-800 border border-zinc-700 rounded-md text-white placeholder:text-zinc-500 focus:ring-1 focus:ring-white/50 outline-none transition" autoFocus />
+                        <input type="text" placeholder="Project name..." value={newProjectName} onChange={e => setNewProjectName(e.target.value.replace(/\s/g, ''))} onKeyDown={e => e.key === 'Enter' && handleConfirmCreate()} className="w-full p-2 bg-zinc-800 border border-zinc-700 rounded-md text-white placeholder:text-zinc-500 focus:ring-1 focus:ring-white/50 outline-none transition" autoFocus />
                         <div className="flex items-center justify-end gap-2">
                             <button onClick={() => setIsCreatingProject(false)} className="px-3 py-1.5 text-sm font-medium text-zinc-300 rounded-md hover:bg-zinc-700 transition-colors">Cancel</button>
                             <button onClick={handleConfirmCreate} disabled={!newProjectName.trim()} className="px-3 py-1.5 text-sm font-medium text-black bg-white rounded-md hover:bg-zinc-200 disabled:opacity-50 transition-colors">Create</button>
