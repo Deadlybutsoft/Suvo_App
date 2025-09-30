@@ -85,8 +85,13 @@ export const HomePage: React.FC<HomePageProps> = ({ onLaunchWorkspace }) => {
 
 
   return (
-    <div className="h-screen w-screen text-white flex flex-col bg-black">
-        <header className="flex-shrink-0 z-20">
+    <div 
+      className="h-screen w-screen text-white flex flex-col bg-cover bg-center relative"
+      style={{ backgroundImage: "url('https://res.cloudinary.com/dkvkxermy/image/upload/v1759208215/4ae33681-e73e-4569-993c-ff9cef5e8baa_pdsy8o.webp')" }}
+    >
+        <div className="absolute inset-0 bg-black/50 z-0" />
+        
+        <header className="flex-shrink-0 z-20 relative">
             <div className="max-w-7xl mx-auto flex justify-between items-center p-4 sm:p-6">
                 <Link to="/" className="text-2xl font-bold text-white select-none font-logo">Suvo</Link>
                 <button 
@@ -98,33 +103,33 @@ export const HomePage: React.FC<HomePageProps> = ({ onLaunchWorkspace }) => {
             </div>
         </header>
 
-        <div className="flex-1 flex flex-col overflow-y-auto grid-pattern">
+        <div className="flex-1 flex flex-col overflow-y-auto relative">
             {/* Main Content */}
-            <main className="flex-grow flex flex-col items-center justify-center text-center w-full max-w-4xl mx-auto z-10 px-4 pt-10 pb-8">
+            <main className="relative flex-grow flex flex-col items-center justify-center text-center w-full max-w-4xl mx-auto z-10 px-4 pt-10 pb-8">
               <button 
                 onClick={() => onLaunchWorkspace()} 
                 className="mb-8 px-4 py-2 bg-yellow-400 text-black rounded-none hover:bg-yellow-500 transition-colors font-semibold text-sm"
               >
                 DEV MODE: Launch Workspace
               </button>
-              <h1 className="text-4xl sm:text-5xl md:text-6xl font-extrabold tracking-tighter text-white">
+              <h1 className="text-4xl sm:text-5xl md:text-6xl font-extrabold tracking-tighter text-white" style={{ textShadow: '0 2px 10px rgba(0,0,0,0.7)' }}>
                 Build <span className="underline decoration-wavy decoration-yellow-400 underline-offset-8">Real Apps</span>. Fast as Hell.
               </h1>
-              <p className="mt-4 text-xl text-zinc-400 max-w-2xl">
+              <p className="mt-4 text-xl text-zinc-200 max-w-2xl" style={{ textShadow: '0 1px 6px rgba(0,0,0,0.8)' }}>
                 Suvo makes ideas go live: apps, functions, <span className="text-white font-medium">integrations</span>, no fluff.
               </p>
 
               <div className="flex items-center border border-zinc-400 mt-12 mb-6">
                 <button 
                     onClick={() => setMode('clone')}
-                    className={`flex items-center gap-2 px-6 py-3 text-base font-semibold transition-colors ${mode === 'clone' ? 'bg-white text-black' : 'text-zinc-400 hover:text-white'}`}
+                    className={`flex items-center gap-2 px-6 py-3 text-base font-semibold transition-colors ${mode === 'clone' ? 'bg-white text-black' : 'text-zinc-400 hover:text-white bg-black/20 backdrop-blur-sm'}`}
                 >
                     <LinkIcon className="w-5 h-5" />
                     Clone a Site
                 </button>
                 <button 
                     onClick={() => setMode('prompt')}
-                    className={`flex items-center gap-2 px-6 py-3 text-base font-semibold transition-colors ${mode === 'prompt' ? 'bg-white text-black' : 'text-zinc-400 hover:text-white'}`}
+                    className={`flex items-center gap-2 px-6 py-3 text-base font-semibold transition-colors ${mode === 'prompt' ? 'bg-white text-black' : 'text-zinc-400 hover:text-white bg-black/20 backdrop-blur-sm'}`}
                 >
                     <SparklesIcon className="w-5 h-5" />
                     Write Prompt
