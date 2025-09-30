@@ -17,6 +17,7 @@ export interface Message {
   isStreaming?: boolean;
   imageUrl?: string;
   previousFileSystem?: FileSystem;
+  isExpectingCodeChanges?: boolean;
 }
 
 export interface FileData {

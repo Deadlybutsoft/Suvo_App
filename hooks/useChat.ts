@@ -561,8 +561,9 @@ export const useChat = (
             if (stopGenerationRef.current) break;
             fullResponseText += chunk.choices[0]?.delta?.content || '';
             const conversationalPart = fullResponseText.split("[CODE_CHANGES]")[0];
+            const isExpectingCodeChanges = fullResponseText.includes("[CODE_CHANGES]");
             const streamedChanges = parseStreamedCodeChanges(fullResponseText);
-            setMessages((prev) => prev.map((m) => m.id === aiMessageId ? { ...m, text: conversationalPart, codeChanges: streamedChanges ?? m.codeChanges } : m));
+            setMessages((prev) => prev.map((m) => m.id === aiMessageId ? { ...m, text: conversationalPart, codeChanges: streamedChanges ?? m.codeChanges, isExpectingCodeChanges } : m));
           }
         } else { // Gemini or Chat Mode (which uses Gemini)
           const ai = new GoogleGenAI({ apiKey: process.env.API_KEY })
@@ -584,8 +585,9 @@ export const useChat = (
                 setMessages((prev) => prev.map((m) => m.id === aiMessageId ? { ...m, text: fullResponseText } : m));
             } else {
                 const conversationalPart = fullResponseText.split("[CODE_CHANGES]")[0]
+                const isExpectingCodeChanges = fullResponseText.includes("[CODE_CHANGES]");
                 const streamedChanges = parseStreamedCodeChanges(fullResponseText)
-                setMessages((prev) => prev.map((m) => m.id === aiMessageId ? { ...m, text: conversationalPart, codeChanges: streamedChanges ?? m.codeChanges } : m));
+                setMessages((prev) => prev.map((m) => m.id === aiMessageId ? { ...m, text: conversationalPart, codeChanges: streamedChanges ?? m.codeChanges, isExpectingCodeChanges } : m));
             }
           }
         }
@@ -623,6 +625,7 @@ export const useChat = (
                 text: finalConversationalText,
                 codeChanges: finalChanges.length > 0 ? finalChanges : m.codeChanges,
                 isStreaming: false,
+                isExpectingCodeChanges: false,
                 error: finalError,
                 ...(finalChanges.length > 0 && { previousFileSystem: fileSystemSnapshot }),
               }

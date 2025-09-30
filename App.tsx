@@ -201,7 +201,21 @@ const Workspace: React.FC = () => {
 
   const [projects, setProjects] = useState<Project[]>([defaultProject]);
   const [activeProjectId, setActiveProjectId] = useState<number>(defaultProject.id);
+  const [activeFile, setActiveFile] = useState<string>('src/App.tsx');
   const activeProject = projects.find(p => p.id === activeProjectId) ?? projects[0];
+
+  useEffect(() => {
+    // This effect ensures that the active file is always valid.
+    // It runs when the project changes or its file system is updated.
+    // If the current active file doesn't exist (e.g., project switch, file deletion),
+    // it resets to a sensible default.
+    if (activeProject && !activeProject.fileSystem[activeFile]) {
+        const defaultFile = activeProject.fileSystem['src/App.tsx'] 
+            ? 'src/App.tsx' 
+            : Object.keys(activeProject.fileSystem)[0];
+        setActiveFile(defaultFile || '');
+    }
+  }, [activeProject, activeFile]);
 
   const [operationMode, setOperationMode] = useState<OperationMode>('gemini-2.5-flash');
   const [openAIAPIKey, setOpenAIAPIKey] = useState<string | null>(() => localStorage.getItem('openai_api_key'));
@@ -349,7 +363,7 @@ const Workspace: React.FC = () => {
         <main className="flex-1 flex overflow-hidden pt-16">
           <ResizablePanel isLeftPanelHidden={isApiPanelHidden}>
             <ChatPanel messages={messages} onSendMessage={sendMessage} aiStatus={aiStatus} stopGeneration={stopGeneration} onRestoreFileSystem={handleRestoreFileSystem} onClearChat={handleClearChat} operationMode={operationMode} onSetOperationMode={setOperationMode} />
-            <MainDisplayPanel fileSystem={activeProject.fileSystem} activeFile={activeProject.fileSystem['src/App.tsx'] ? 'src/App.tsx' : Object.keys(activeProject.fileSystem)[0]} onActiveFileChange={() => {}} theme={'dark'} isPanelHidden={isApiPanelHidden} togglePanel={toggleApiPanel} />
+            <MainDisplayPanel fileSystem={activeProject.fileSystem} activeFile={activeFile} onActiveFileChange={setActiveFile} theme={'dark'} isPanelHidden={isApiPanelHidden} togglePanel={toggleApiPanel} />
           </ResizablePanel>
         </main>
         <SideDrawer isOpen={isDrawerOpen} onClose={toggleDrawer} onOpenSettings={handleOpenSettings} onUpgradeClick={handleUpgradeClick} projects={projects} activeProjectId={activeProjectId} onCreateNewProject={handleCreateNewProject} onDeleteProject={handleDeleteProject} onRenameProject={handleRenameProject} onSwitchProject={handleSwitchProject} />
