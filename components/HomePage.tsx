@@ -147,6 +147,9 @@ export const HomePage: React.FC<HomePageProps> = ({ onLaunchWorkspace }) => {
                         stopGeneration={() => {}}
                         operationMode={'gemini-2.5-flash'}
                         onSetOperationMode={() => {}}
+                        // FIX: Pass null for openAIAPIKey and a no-op for onOpenSettings as they are not available on the home page.
+                        openAIAPIKey={null}
+                        onOpenSettings={() => {}}
                     />
                 ) : (
                     <div className="relative bg-black border border-zinc-400 flex items-center text-white shadow-2xl shadow-black/50 p-4 pl-6 rounded-lg">
