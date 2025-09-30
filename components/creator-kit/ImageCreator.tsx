@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { generateImage, AspectRatio } from '../../services/gemini';
-import { SpinnerIcon, CheckIcon, SparklesIcon } from '../icons';
+import { SpinnerIcon, CheckIcon, SparklesIcon, ChevronDownIcon } from '../icons';
 
 const urlToDataFile = async (base64: string, filename: string): Promise<File> => {
     const res = await fetch(`data:image/jpeg;base64,${base64}`);
@@ -9,9 +9,11 @@ const urlToDataFile = async (base64: string, filename: string): Promise<File> =>
 };
 
 const aspectRatios: { label: string; value: AspectRatio }[] = [
-    { label: 'Square', value: '1:1' },
-    { label: 'Portrait', value: '3:4' },
-    { label: 'Landscape', value: '16:9' },
+    { label: 'Square (1:1)', value: '1:1' },
+    { label: 'Portrait (3:4)', value: '3:4' },
+    { label: 'Standard (4:3)', value: '4:3' },
+    { label: 'Tall (9:16)', value: '9:16' },
+    { label: 'Widescreen (16:9)', value: '16:9' },
 ];
 
 export const ImageCreator: React.FC<{ onSelectImages: (files: File[]) => void; }> = ({ onSelectImages }) => {
@@ -22,6 +24,20 @@ export const ImageCreator: React.FC<{ onSelectImages: (files: File[]) => void; }
     const [selectedImages, setSelectedImages] = useState<Set<string>>(new Set());
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
+    const [isAspectRatioOpen, setIsAspectRatioOpen] = useState(false);
+    const aspectRatioRef = useRef<HTMLDivElement>(null);
+
+    useEffect(() => {
+        const handleClickOutside = (event: MouseEvent) => {
+            if (aspectRatioRef.current && !aspectRatioRef.current.contains(event.target as Node)) {
+                setIsAspectRatioOpen(false);
+            }
+        };
+        document.addEventListener('mousedown', handleClickOutside);
+        return () => {
+            document.removeEventListener('mousedown', handleClickOutside);
+        };
+    }, []);
 
     const handleGenerate = async () => {
         if (!prompt.trim()) return;
@@ -33,12 +49,8 @@ export const ImageCreator: React.FC<{ onSelectImages: (files: File[]) => void; }
             const images = await generateImage(prompt, { numberOfImages: numImages, aspectRatio });
             setGeneratedImages(images);
         } catch (err) {
-            if (err instanceof Error) {
-                setError(err.message);
-            } else {
-                // FIX: The 'err' variable is of type 'unknown' and cannot be assigned to a state that expects a string. Convert it to a string.
-                setError(String(err));
-            }
+            // FIX: Check if err is an instance of Error to safely access the message property.
+            setError(err instanceof Error ? err.message : String(err));
         } finally {
             setIsLoading(false);
         }
@@ -61,36 +73,22 @@ export const ImageCreator: React.FC<{ onSelectImages: (files: File[]) => void; }
         onSelectImages(files);
     };
 
+    const selectedAspectRatioLabel = aspectRatios.find(ar => ar.value === aspectRatio)?.label.split(' ')[0] || '1:1';
+
     return (
         <div className="h-full flex flex-col">
-            <div className="p-4 space-y-3 border-b border-zinc-800">
-                <textarea value={prompt} onChange={e => setPrompt(e.target.value)} placeholder="Describe the image you want to create..." rows={3} className="w-full p-2.5 bg-zinc-900 border border-zinc-700 rounded-md text-white placeholder:text-zinc-500 focus:ring-1 focus:ring-white outline-none transition" />
-                <div className="grid grid-cols-2 gap-3">
-                    <div>
-                        <label className="text-xs text-zinc-400">Aspect Ratio</label>
-                        <div className="flex items-center gap-1 mt-1 bg-zinc-900 p-1 rounded-md border border-zinc-700">
-                            {aspectRatios.map(ar => (
-                                <button key={ar.value} onClick={() => setAspectRatio(ar.value)} className={`flex-1 text-xs px-2 py-1 rounded ${aspectRatio === ar.value ? 'bg-zinc-700 text-white' : 'text-zinc-400 hover:bg-zinc-800'}`}>{ar.label}</button>
-                            ))}
-                        </div>
-                    </div>
-                     <div>
-                        <label className="text-xs text-zinc-400">Number of Images</label>
-                        <div className="flex items-center gap-1 mt-1 bg-zinc-900 p-1 rounded-md border border-zinc-700">
-                            {[1, 2, 4].map(n => (
-                                <button key={n} onClick={() => setNumImages(n)} className={`flex-1 text-xs px-2 py-1 rounded ${numImages === n ? 'bg-zinc-700 text-white' : 'text-zinc-400 hover:bg-zinc-800'}`}>{n}</button>
-                            ))}
-                        </div>
-                    </div>
-                </div>
-                <button onClick={handleGenerate} disabled={isLoading || !prompt.trim()} className="w-full flex items-center justify-center gap-2 py-2.5 px-4 font-semibold bg-white text-black rounded-md hover:bg-zinc-200 transition-colors disabled:opacity-50">
-                    {isLoading ? <SpinnerIcon className="w-5 h-5" /> : <SparklesIcon className="w-5 h-5" />}
-                    {isLoading ? 'Generating...' : `Generate Image${numImages > 1 ? 's' : ''}`}
-                </button>
-            </div>
             <div className="flex-1 overflow-y-auto p-4">
-                {error && <p className="text-center text-red-400 p-4">{error}</p>}
-                {generatedImages.length > 0 && (
+                {isLoading && (
+                    <div className="h-full flex items-center justify-center">
+                        <SpinnerIcon className="w-10 h-10 text-zinc-500" />
+                    </div>
+                )}
+                {!isLoading && error && (
+                    <div className="h-full flex items-center justify-center text-red-400">
+                        <p className="text-center p-4">{error}</p>
+                    </div>
+                )}
+                {!isLoading && !error && generatedImages.length > 0 && (
                     <div className={`grid gap-2 ${generatedImages.length > 1 ? 'grid-cols-2' : 'grid-cols-1'}`}>
                         {generatedImages.map((base64, i) => (
                            <button key={i} onClick={() => toggleSelection(base64)} className="relative aspect-square group">
@@ -106,14 +104,81 @@ export const ImageCreator: React.FC<{ onSelectImages: (files: File[]) => void; }
                         ))}
                     </div>
                 )}
+                {!isLoading && !error && generatedImages.length === 0 && (
+                    <div className="h-full flex flex-col items-center justify-center text-center text-zinc-500">
+                        <SparklesIcon className="w-12 h-12 mb-4 text-zinc-600" />
+                        <p className="font-medium text-zinc-400">Images you generate will appear here.</p>
+                        <p className="text-sm">Describe what you want to create and click generate.</p>
+                    </div>
+                )}
             </div>
-             {selectedImages.size > 0 && (
-                <div className="flex-shrink-0 p-4 border-t border-zinc-800">
-                    <button onClick={handleAttach} className="w-full py-2.5 px-4 font-semibold bg-white text-black rounded-md hover:bg-zinc-200 transition-colors">
-                        Attach {selectedImages.size} Image{selectedImages.size > 1 ? 's' : ''}
+            
+            <div className="flex-shrink-0 p-3 border-t border-zinc-800 space-y-3">
+                <div className="flex items-start gap-2">
+                    <textarea 
+                        value={prompt} 
+                        onChange={e => setPrompt(e.target.value)} 
+                        placeholder="A photorealistic image of..." 
+                        rows={2} 
+                        className="flex-grow resize-none p-2.5 bg-zinc-900 border border-zinc-700 rounded-md text-white placeholder:text-zinc-500 focus:ring-1 focus:ring-white outline-none transition" 
+                    />
+                    <button 
+                        onClick={handleGenerate} 
+                        disabled={isLoading || !prompt.trim()} 
+                        className="w-11 h-11 flex-shrink-0 flex items-center justify-center bg-white text-black rounded-md hover:bg-zinc-200 transition-colors disabled:opacity-50"
+                        title="Generate Image"
+                    >
+                        {isLoading ? <SpinnerIcon className="w-5 h-5" /> : <SparklesIcon className="w-5 h-5" />}
                     </button>
                 </div>
-            )}
+                
+                <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                        <div ref={aspectRatioRef} className="relative">
+                            <button 
+                                onClick={() => setIsAspectRatioOpen(p => !p)}
+                                className="flex items-center gap-2 px-3 py-1.5 text-sm bg-zinc-800 hover:bg-zinc-700 text-zinc-300 rounded-md transition-colors"
+                            >
+                                <span>{selectedAspectRatioLabel}</span>
+                                <ChevronDownIcon className={`w-4 h-4 transition-transform ${isAspectRatioOpen ? 'rotate-180' : ''}`} />
+                            </button>
+                            {isAspectRatioOpen && (
+                                <div className="absolute bottom-full left-0 mb-1 w-48 bg-zinc-900 border border-zinc-700 shadow-lg z-10 p-1 rounded-md">
+                                    {aspectRatios.map(ar => (
+                                        <button 
+                                            key={ar.value}
+                                            onClick={() => { setAspectRatio(ar.value); setIsAspectRatioOpen(false); }}
+                                            className="w-full text-left text-sm px-3 py-1.5 rounded hover:bg-zinc-800"
+                                        >
+                                            {ar.label}
+                                        </button>
+                                    ))}
+                                </div>
+                            )}
+                        </div>
+
+                        <div className="flex items-center p-0.5 bg-zinc-900 border border-zinc-700 rounded-md">
+                            {[1, 2, 4].map(n => (
+                                <button 
+                                    key={n}
+                                    onClick={() => setNumImages(n)}
+                                    className={`px-3 py-1 text-sm rounded transition-colors ${numImages === n ? 'bg-zinc-700 text-white' : 'text-zinc-400 hover:bg-zinc-800'}`}
+                                >
+                                    {n}
+                                </button>
+                            ))}
+                        </div>
+                    </div>
+
+                    <button
+                        onClick={handleAttach}
+                        disabled={selectedImages.size === 0}
+                        className="px-4 py-1.5 font-semibold bg-white text-black rounded-md hover:bg-zinc-200 transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-sm"
+                    >
+                        {selectedImages.size > 0 ? `Attach ${selectedImages.size}` : 'Attach'}
+                    </button>
+                </div>
+            </div>
         </div>
     );
 };

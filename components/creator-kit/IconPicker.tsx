@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useDebounce } from '../../hooks/useDebounce';
-import { SpinnerIcon } from '../icons';
+import { SpinnerIcon, PuzzlePieceIcon } from '../icons';
 
 interface IconifyIcon {
   name: string;
@@ -88,21 +88,48 @@ export const IconPicker: React.FC<{ onSelectIcon: (svg: string) => void; }> = ({
         />
       </div>
       <div className="flex-1 overflow-y-auto p-4">
-        {isLoading && <div className="flex justify-center items-center h-full"><SpinnerIcon className="w-8 h-8 text-zinc-500" /></div>}
-        {error && <p className="text-center text-red-400">{error}</p>}
+        {isLoading && (
+            <div className="h-full flex items-center justify-center">
+                <SpinnerIcon className="w-8 h-8 text-zinc-500" />
+            </div>
+        )}
+        {!isLoading && error && (
+            <div className="h-full flex items-center justify-center text-red-400">
+                <p className="text-center">{error}</p>
+            </div>
+        )}
         {!isLoading && !error && (
-          <div className="grid grid-cols-6 gap-2">
-            {results.map(icon => (
-              <button
-                key={icon.prefix + ':' + icon.name}
-                title={icon.name}
-                onClick={() => handleIconClick(icon.prefix, icon.name)}
-                className="aspect-square flex items-center justify-center p-2 bg-zinc-900 rounded-md hover:bg-zinc-800 transition-colors"
-                dangerouslySetInnerHTML={{ __html: `<img src="https://api.iconify.design/${icon.prefix}/${icon.name}.svg?color=white" class="w-8 h-8"/>` }}
-              />
-            ))}
-            {debouncedQuery && results.length === 0 && <p className="col-span-6 text-center text-zinc-500">No icons found.</p>}
-          </div>
+            <>
+                {results.length > 0 ? (
+                    <div className="grid grid-cols-6 gap-2">
+                        {results.map(icon => (
+                            <button
+                                key={icon.prefix + ':' + icon.name}
+                                title={icon.name}
+                                onClick={() => handleIconClick(icon.prefix, icon.name)}
+                                className="aspect-square flex items-center justify-center p-2 bg-zinc-900 rounded-md hover:bg-zinc-800 transition-colors"
+                            >
+                                <img
+                                    src={`https://api.iconify.design/${icon.prefix}/${icon.name}.svg?color=white`}
+                                    alt={icon.name}
+                                    className="w-3/5 h-3/5"
+                                    loading="lazy"
+                                />
+                            </button>
+                        ))}
+                    </div>
+                ) : debouncedQuery ? (
+                    <div className="h-full flex items-center justify-center text-zinc-500">
+                        <p>No icons found for "{debouncedQuery}".</p>
+                    </div>
+                ) : (
+                    <div className="h-full flex flex-col items-center justify-center text-center text-zinc-500">
+                        <PuzzlePieceIcon className="w-12 h-12 mb-4 text-zinc-600" />
+                        <p className="font-medium text-zinc-400">Search for an icon</p>
+                        <p className="text-sm">Powered by Iconify.</p>
+                    </div>
+                )}
+            </>
         )}
       </div>
     </div>
