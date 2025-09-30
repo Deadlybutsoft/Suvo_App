@@ -26,7 +26,7 @@ const ViewportButton: React.FC<{
         <button
             onClick={() => onClick(label)}
             title={`${label.charAt(0).toUpperCase() + label.slice(1)} view`}
-            className={`p-2 rounded-none transition-colors ${
+            className={`p-2 rounded-md transition-colors ${
                 isActive 
                 ? 'bg-zinc-800 text-white' 
                 : 'text-zinc-400 hover:bg-zinc-800'
@@ -60,16 +60,16 @@ export const MainDisplayPanel: React.FC<MainDisplayPanelProps> = ({
                 <div className="flex items-center gap-2">
                     <button
                         onClick={togglePanel}
-                        className="p-2 rounded-none hover:bg-zinc-800 text-zinc-400 transition-colors"
+                        className="p-2 rounded-md hover:bg-zinc-800 text-zinc-400 transition-colors"
                         title={isPanelHidden ? "Show Chat Panel" : "Hide Chat Panel"}
                     >
                         <PanelToggleArrowsIcon className={`h-5 w-5 transition-transform duration-300 ${isPanelHidden ? 'scale-x-[-1]' : ''}`} />
                     </button>
                     {/* Tab Switcher */}
-                    <div className="flex items-center gap-1 bg-zinc-800 p-1 rounded-none">
+                    <div className="flex items-center gap-1 bg-zinc-800 p-1 rounded-md">
                         <button
                             onClick={() => setActiveTab("code")}
-                            className={`flex items-center gap-2 px-3 py-1 text-sm font-medium rounded-none transition-colors ${
+                            className={`flex items-center gap-2 px-3 py-1 text-sm font-medium rounded-sm transition-colors ${
                             activeTab === "code"
                                 ? "bg-black text-white shadow-sm"
                                 : "text-zinc-400 hover:bg-black/50"
@@ -80,7 +80,7 @@ export const MainDisplayPanel: React.FC<MainDisplayPanelProps> = ({
                         </button>
                         <button
                             onClick={() => setActiveTab("preview")}
-                            className={`flex items-center gap-2 px-3 py-1 text-sm font-medium rounded-none transition-colors ${
+                            className={`flex items-center gap-2 px-3 py-1 text-sm font-medium rounded-sm transition-colors ${
                             activeTab === "preview"
                                 ? "bg-black text-white shadow-sm"
                                 : "text-zinc-400 hover:bg-black/50"
@@ -105,14 +105,14 @@ export const MainDisplayPanel: React.FC<MainDisplayPanelProps> = ({
                                 <button
                                     onClick={handleRefresh}
                                     title="Refresh Preview"
-                                    className="p-2 rounded-none text-zinc-400 hover:bg-zinc-800 transition-colors"
+                                    className="p-2 rounded-md text-zinc-400 hover:bg-zinc-800 transition-colors"
                                 >
                                     <RefreshCwIcon className="w-5 h-5" />
                                 </button>
                                 <button
                                     onClick={handleFullscreen}
                                     title="Fullscreen Preview"
-                                    className="p-2 rounded-none text-zinc-400 hover:bg-zinc-800 transition-colors"
+                                    className="p-2 rounded-md text-zinc-400 hover:bg-zinc-800 transition-colors"
                                 >
                                     <MaximizeIcon className="w-5 h-5" />
                                 </button>

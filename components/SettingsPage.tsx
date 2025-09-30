@@ -78,7 +78,7 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({
                                 alert('Chat history has been cleared.');
                             }
                         }}
-                        className="px-4 py-2 text-sm font-medium bg-red-600 hover:bg-red-700 text-white rounded-none transition-colors"
+                        className="px-4 py-2 text-sm font-medium bg-red-600 hover:bg-red-700 text-white rounded-md transition-colors"
                     >
                         Clear Chat History
                     </button>
@@ -90,11 +90,11 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({
              <>
                 <SettingsHeader title="Subscription" description="Manage your billing information and plan." />
                 <SettingsRow title="Current Plan" description="You are currently on the Free plan.">
-                    <div className="p-4 bg-zinc-950 flex items-center justify-between rounded-none">
+                    <div className="p-4 bg-zinc-950 flex items-center justify-between rounded-lg">
                         <div>
                             <p className="font-semibold text-lg text-white">Free</p>
                         </div>
-                        <button onClick={onUpgradeClick} className="px-4 py-2 font-medium text-black bg-white hover:bg-zinc-200 rounded-none transition-colors">
+                        <button onClick={onUpgradeClick} className="px-4 py-2 font-medium text-black bg-white hover:bg-zinc-200 rounded-md transition-colors">
                             Upgrade Plan
                         </button>
                     </div>
@@ -112,13 +112,13 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({
                         placeholder="sk-..."
                         value={tempOpenAIKey}
                         onChange={(e) => setTempOpenAIKey(e.target.value)}
-                        className="w-full max-w-sm p-2.5 bg-zinc-900 border border-zinc-600 rounded-none text-white placeholder:text-zinc-500 focus:ring-1 focus:ring-white outline-none transition"
+                        className="w-full max-w-sm p-2.5 bg-zinc-900 border border-zinc-600 rounded-md text-white placeholder:text-zinc-500 focus:ring-1 focus:ring-white outline-none transition"
                     />
                     <div>
                         <button 
                             onClick={handleSaveOpenAIKey}
                             disabled={isSaved}
-                            className="px-4 py-2 w-28 text-sm font-medium bg-white hover:bg-zinc-200 text-black rounded-none transition-colors disabled:bg-zinc-300 disabled:cursor-not-allowed flex items-center justify-center"
+                            className="px-4 py-2 w-28 text-sm font-medium bg-white hover:bg-zinc-200 text-black rounded-md transition-colors disabled:bg-zinc-300 disabled:cursor-not-allowed flex items-center justify-center"
                         >
                             {isSaved ? 'Saved!' : 'Save Key'}
                         </button>
@@ -139,7 +139,7 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({
         className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm"
     >
         <div 
-            className="w-full max-w-4xl h-full max-h-[80vh] bg-black text-white shadow-2xl rounded-none flex flex-col overflow-hidden border border-zinc-700"
+            className="w-full max-w-4xl h-full max-h-[80vh] bg-black text-white shadow-2xl rounded-lg flex flex-col overflow-hidden border border-zinc-700"
             onClick={(e) => e.stopPropagation()}
         >
             <header className="flex-shrink-0 p-4 border-b border-zinc-700 flex items-center justify-between">
@@ -156,7 +156,7 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({
                             <button 
                                 key={tab.id}
                                 onClick={() => setActiveTab(tab.id)}
-                                className={`w-full flex items-center gap-3 px-3 py-2 text-sm font-medium text-left rounded-none transition-colors ${activeTab === tab.id ? 'bg-white text-black' : 'text-zinc-400 hover:bg-zinc-900 hover:text-white'}`}
+                                className={`w-full flex items-center gap-3 px-3 py-2 text-sm font-medium text-left rounded-md transition-colors ${activeTab === tab.id ? 'bg-white text-black' : 'text-zinc-400 hover:bg-zinc-900 hover:text-white'}`}
                             >
                                 <tab.icon className={`w-5 h-5 flex-shrink-0 ${activeTab === tab.id ? '' : 'text-zinc-500'}`} />
                                 <span>{tab.label}</span>

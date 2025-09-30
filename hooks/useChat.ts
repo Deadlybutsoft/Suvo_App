@@ -240,7 +240,7 @@ const getFriendlyErrorMessage = (error: any, context: 'api' | 'parsing'): string
 
 const applyCodeChanges = (
   changes: FileChange[],
-  setFileSystem: React.Dispatch<React.SetStateAction<FileSystem>>,
+  setFileSystem: (updater: (fs: FileSystem) => FileSystem) => void,
   lastUploadedImage: { data: string; mimeType: string } | null,
   clearLastUploadedImage: () => void,
 ) => {
@@ -426,13 +426,14 @@ const finalParseCodeChanges = (fullResponseText: string): { changes: FileChange[
 }
 
 export const useChat = (
+  messages: Message[],
+  setMessages: (updater: Message[] | ((prev: Message[]) => Message[])) => void,
   fileSystem: FileSystem,
-  setFileSystem: React.Dispatch<React.SetStateAction<FileSystem>>,
+  setFileSystem: (updater: FileSystem | ((prev: FileSystem) => FileSystem)) => void,
   operationMode: OperationMode,
   openAIAPIKey: string | null,
   onOpenSettings: () => void,
 ) => {
-  const [messages, setMessages] = useState<Message[]>([])
   const [aiStatus, setAiStatus] = useState<AiStatus>("idle")
   const stopGenerationRef = useRef(false)
   const lastUploadedImageRef = useRef<{ data: string; mimeType: string } | null>(null)
@@ -496,7 +497,6 @@ export const useChat = (
       setAiStatus("thinking")
 
       const userMessage: Message = { id: Date.now().toString(), role: "user", text: initialPrompt }
-      const messagesBeforeSend = [...messages]
       
       let imageForNextTurn: { data: string; mimeType: string } | null = null
       if (image && !isChatMode) { // Images are ignored in chat mode
@@ -520,8 +520,7 @@ export const useChat = (
         }
       }
 
-      messagesBeforeSend.push(userMessage)
-      setMessages(messagesBeforeSend)
+      setMessages((prev) => [...prev, userMessage]);
       
       const aiMessageId = (Date.now() + 2).toString()
       const fileSystemSnapshot = isChatMode ? null : JSON.parse(JSON.stringify(fileSystem));
@@ -545,7 +544,7 @@ export const useChat = (
       try {
         if (modelToUse === 'chatgpt-5') {
           const openai = new OpenAI({ apiKey: openAIAPIKey, dangerouslyAllowBrowser: true });
-          const history = buildOpenAIHistory(messagesBeforeSend, systemInstruction);
+          const history = buildOpenAIHistory(messages, systemInstruction);
           const userPromptContent: (OpenAI.Chat.Completions.ChatCompletionContentPartText | OpenAI.Chat.Completions.ChatCompletionContentPartImage)[] = [{ type: 'text', text: textPromptContent }];
           
           if (imageForNextTurn) {
@@ -567,7 +566,7 @@ export const useChat = (
           }
         } else { // Gemini or Chat Mode (which uses Gemini)
           const ai = new GoogleGenAI({ apiKey: process.env.API_KEY })
-          const chatHistory = buildGeminiHistory(messagesBeforeSend)
+          const chatHistory = buildGeminiHistory(messages)
           
           const promptParts: Part[] = []
           if (imageForNextTurn) {
@@ -638,7 +637,7 @@ export const useChat = (
       }
       setAiStatus("idle")
     },
-    [fileSystem, setFileSystem, messages, clearLastUploadedImage, operationMode, openAIAPIKey, onOpenSettings],
+    [fileSystem, setFileSystem, messages, setMessages, clearLastUploadedImage, operationMode, openAIAPIKey, onOpenSettings],
   )
 
   return { messages, setMessages, sendMessage, aiStatus, stopGeneration }

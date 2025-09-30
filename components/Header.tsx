@@ -50,13 +50,13 @@ export const Header: React.FC<HeaderProps> = ({
           <button
             onClick={() => setIntegrationsMenuOpen(prev => !prev)}
             title="Add Integration"
-            className="flex items-center gap-2 px-3 py-2 text-sm font-medium bg-black text-zinc-300 hover:text-white border border-zinc-600 hover:border-zinc-500 transition-colors rounded-none"
+            className="flex items-center gap-2 px-3 py-2 text-sm font-medium bg-black text-zinc-300 hover:text-white border border-zinc-600 hover:border-zinc-500 transition-colors rounded-md"
           >
             <IntegrationsIcon className="h-5 w-5 text-zinc-400" />
             <span>Integrations</span>
           </button>
           {isIntegrationsMenuOpen && (
-            <div className="absolute top-full right-0 mt-2 w-64 bg-black border border-zinc-600 shadow-xl z-20 p-2 rounded-none">
+            <div className="absolute top-full right-0 mt-2 w-64 bg-black border border-zinc-600 shadow-xl z-20 p-2 rounded-lg">
                 <div className="px-2 pt-2 pb-1">
                     <h3 className="text-sm font-semibold text-white">Add Integration</h3>
                 </div>
@@ -66,7 +66,7 @@ export const Header: React.FC<HeaderProps> = ({
                         <button 
                             key={integration.id}
                             onClick={() => { onSelectIntegration(integration.id); setIntegrationsMenuOpen(false); }} 
-                            className="w-full p-2 text-sm text-left rounded-none hover:bg-zinc-900 transition-colors"
+                            className="w-full p-2 text-sm text-left rounded-md hover:bg-zinc-900 transition-colors"
                         >
                             <span className="font-medium text-slate-200">{integration.name}</span>
                         </button>
@@ -80,17 +80,17 @@ export const Header: React.FC<HeaderProps> = ({
             <button
                 onClick={() => setDownloadMenuOpen(prev => !prev)}
                 title="Download"
-                className="flex items-center gap-2 px-3 py-2 text-sm font-medium bg-black text-zinc-300 hover:text-white border border-zinc-600 hover:border-zinc-500 transition-colors rounded-none"
+                className="flex items-center gap-2 px-3 py-2 text-sm font-medium bg-black text-zinc-300 hover:text-white border border-zinc-600 hover:border-zinc-500 transition-colors rounded-md"
             >
                 <DownloadIcon className="h-5 w-5 text-zinc-400" />
                 <span>Export</span>
             </button>
             {isDownloadMenuOpen && (
-                <div className="absolute top-full right-0 mt-2 w-64 bg-black border border-zinc-600 shadow-xl z-20 p-2 rounded-none">
+                <div className="absolute top-full right-0 mt-2 w-64 bg-black border border-zinc-600 shadow-xl z-20 p-2 rounded-lg">
                     <div className="space-y-1">
                         <button 
                             onClick={() => { onDownloadZip(); setDownloadMenuOpen(false); }}
-                            className="w-full flex items-center gap-3 p-2 text-sm text-left rounded-none hover:bg-zinc-900 transition-colors"
+                            className="w-full flex items-center gap-3 p-2 text-sm text-left rounded-md hover:bg-zinc-900 transition-colors"
                         >
                             <DownloadIcon className="w-5 h-5 text-slate-300" />
                             <span className="font-medium text-slate-200">Download Project (.zip)</span>
@@ -102,7 +102,7 @@ export const Header: React.FC<HeaderProps> = ({
         
         <button
           onClick={onUpgradeClick}
-          className="text-sm font-semibold bg-white text-black px-5 py-2 rounded-none hover:bg-zinc-200 transition-colors"
+          className="text-sm font-semibold bg-white text-black px-5 py-2 rounded-md hover:bg-zinc-200 transition-colors"
         >
           Upgrade
         </button>
@@ -111,7 +111,7 @@ export const Header: React.FC<HeaderProps> = ({
         
         <button
           onClick={onMenuClick}
-          className="p-2 rounded-none hover:bg-zinc-900 transition-colors"
+          className="p-2 rounded-md hover:bg-zinc-900 transition-colors"
           aria-label="Open menu"
         >
           <MenuIcon className="h-6 w-6 text-zinc-300" />

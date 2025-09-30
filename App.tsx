@@ -8,7 +8,7 @@ import { SideDrawer } from "./components/SideDrawer"
 import { ChatPanel } from "./components/ChatPanel"
 import { ResizablePanel } from "./components/ResizablePanel"
 import { useChat } from "./hooks/useChat"
-import type { FileSystem, AppTheme, IntegrationType, OperationMode, SettingsTab } from "./types"
+import type { FileSystem, AppTheme, IntegrationType, OperationMode, SettingsTab, Project, Message } from "./types"
 import { HomePage } from "./components/HomePage"
 import JSZip from "jszip"
 import { SettingsPage } from "./components/SettingsPage"
@@ -181,8 +181,13 @@ export default {
   }
 };
 
-// Using global-like variables is a simple way to pass initial data 
-// from the homepage to the workspace without complex state management across routes.
+const defaultProject: Project = {
+  id: Date.now(),
+  name: "Welcome to Suvo",
+  fileSystem: initialFileSystem,
+  messages: [],
+};
+
 let initialPromptForWorkspace: string | undefined = undefined;
 let initialImageForWorkspace: File | null = null;
 
@@ -193,9 +198,11 @@ const Workspace: React.FC = () => {
   const [isPricingModalOpen, setPricingModalOpen] = useState(false)
   const [initialSettingsTab, setInitialSettingsTab] = useState<SettingsTab>('api_keys');
   const [selectedIntegration, setSelectedIntegration] = useState<Integration | null>(null);
-  
-  const [fileSystem, setFileSystem] = useState<FileSystem>(initialFileSystem)
-  const [activeFile, setActiveFile] = useState<string>("src/App.tsx")
+
+  const [projects, setProjects] = useState<Project[]>([defaultProject]);
+  const [activeProjectId, setActiveProjectId] = useState<number>(defaultProject.id);
+  const activeProject = projects.find(p => p.id === activeProjectId) ?? projects[0];
+
   const [operationMode, setOperationMode] = useState<OperationMode>('gemini-2.5-flash');
   const [openAIAPIKey, setOpenAIAPIKey] = useState<string | null>(() => localStorage.getItem('openai_api_key'));
 
@@ -208,213 +215,142 @@ const Workspace: React.FC = () => {
     }
   }, []);
 
+  const setActiveProjectMessages = (updater: Message[] | ((prev: Message[]) => Message[])) => {
+    setProjects(currentProjects =>
+      currentProjects.map(p => {
+        if (p.id === activeProjectId) {
+          const newMessages = typeof updater === 'function' ? updater(p.messages) : updater;
+          return { ...p, messages: newMessages };
+        }
+        return p;
+      })
+    );
+  };
+  
+  const setActiveProjectFileSystem = (updater: FileSystem | ((prev: FileSystem) => FileSystem)) => {
+    setProjects(currentProjects =>
+      currentProjects.map(p => {
+        if (p.id === activeProjectId) {
+            const newFileSystem = typeof updater === 'function' ? updater(p.fileSystem) : updater;
+            return { ...p, fileSystem: newFileSystem };
+        }
+        return p;
+      })
+    );
+  };
+
   const { messages, sendMessage, aiStatus, stopGeneration, setMessages } = useChat(
-    fileSystem,
-    setFileSystem,
+    activeProject.messages,
+    setActiveProjectMessages,
+    activeProject.fileSystem,
+    setActiveProjectFileSystem,
     operationMode,
     openAIAPIKey,
     () => setSettingsOpen(true),
-  )
+  );
   
   useEffect(() => {
-    // Force dark theme
-    const root = document.documentElement
-    if (!root.classList.contains('dark')) {
-      root.classList.remove("light")
-      root.classList.add("dark")
-    }
+    document.documentElement.classList.add('dark');
     document.body.className = 'dark';
-  }, [])
+  }, []);
 
-  // Send initial prompt after launch
   useEffect(() => {
     if (initialPromptForWorkspace || initialImageForWorkspace) {
       sendMessage(initialPromptForWorkspace || '', initialImageForWorkspace)
-      initialPromptForWorkspace = undefined // Reset after sending
+      initialPromptForWorkspace = undefined;
       initialImageForWorkspace = null;
     }
-  }, [sendMessage])
+  }, [sendMessage]);
 
-  const toggleDrawer = useCallback(() => {
-    setDrawerOpen((prev) => !prev)
-  }, [])
-
-  const toggleApiPanel = useCallback(() => {
-    setApiPanelHidden((prev) => !prev)
-  }, [])
-
-  const handleUpgradeClick = useCallback(() => {
-    setPricingModalOpen(true)
-    setDrawerOpen(false) // Close drawer if open
-    setSettingsOpen(false) // Close settings if open
-  }, [])
-
-  const handleOpenSettings = useCallback((tab: SettingsTab = 'api_keys') => {
-    setInitialSettingsTab(tab);
-    setDrawerOpen(false)
-    setSettingsOpen(true)
-  }, [])
+  const toggleDrawer = useCallback(() => setDrawerOpen(p => !p), []);
+  const toggleApiPanel = useCallback(() => setApiPanelHidden(p => !p), []);
+  const handleUpgradeClick = useCallback(() => { setPricingModalOpen(true); setDrawerOpen(false); setSettingsOpen(false); }, []);
+  const handleOpenSettings = useCallback((tab: SettingsTab = 'api_keys') => { setInitialSettingsTab(tab); setDrawerOpen(false); setSettingsOpen(true); }, []);
 
   const handleClearChat = useCallback(() => {
-    if (confirm('Are you sure you want to clear the chat history? This action cannot be undone.')) {
-        setMessages([]);
+    if (confirm('Are you sure you want to clear the chat history for this project?')) {
+        setActiveProjectMessages([]);
         return true;
     }
     return false;
-  }, [setMessages]);
+  }, [activeProjectId]);
 
-  const handleCreateNewProject = useCallback(() => {
-    const confirmed = confirm('Are you sure you want to start a new project? All current files and chat history will be lost.');
-    if (confirmed) {
-        setFileSystem(initialFileSystem);
-        setMessages([]);
-        setActiveFile("src/App.tsx");
-        setDrawerOpen(false);
+  const handleCreateNewProject = useCallback((name: string) => {
+    const newProject: Project = {
+      id: Date.now(),
+      name,
+      fileSystem: JSON.parse(JSON.stringify(initialFileSystem)), // Deep copy
+      messages: [],
+    };
+    setProjects(prev => [newProject, ...prev]);
+    setActiveProjectId(newProject.id);
+    setDrawerOpen(false);
+  }, []);
+  
+  const handleSwitchProject = useCallback((id: number) => {
+    if (id !== activeProjectId) {
+      setActiveProjectId(id);
+      setDrawerOpen(false);
     }
-    return confirmed;
-  }, [setFileSystem, setMessages, setActiveFile, setDrawerOpen]);
+  }, [activeProjectId]);
 
-  const handleRestoreFileSystem = useCallback((fs: FileSystem) => {
-    setFileSystem(fs);
-    setMessages(prev => [
-      ...prev,
-      {
-        id: Date.now().toString(),
-        role: 'ai',
-        text: 'I have restored the project to the selected checkpoint.'
-      }
-    ]);
-  }, [setFileSystem, setMessages]);
-
-  const handleDownloadZip = useCallback(async () => {
-    const zip = new JSZip()
-    for (const path in fileSystem) {
-      zip.file(path, fileSystem[path].content)
+  const handleDeleteProject = useCallback((id: number) => {
+    if (projects.length <= 1) {
+      alert("You cannot delete the only project. Create another project first.");
+      return;
     }
-    const blob = await zip.generateAsync({ type: "blob" })
-    const link = document.createElement("a")
-    link.href = URL.createObjectURL(blob)
-    link.download = "suvo-project.zip"
-    document.body.appendChild(link)
-    link.click()
-    document.body.removeChild(link)
-    URL.revokeObjectURL(link.href)
-  }, [fileSystem])
-
-  const handleSelectIntegration = useCallback((integrationType: IntegrationType) => {
-    const integrationData = INTEGRATIONS.find(i => i.id === integrationType);
-    if (integrationData) {
-        setSelectedIntegration(integrationData);
+    const remainingProjects = projects.filter(p => p.id !== id);
+    setProjects(remainingProjects);
+    if (activeProjectId === id) {
+      setActiveProjectId(remainingProjects[0]?.id ?? null);
     }
+  }, [projects, activeProjectId]);
+
+  const handleRenameProject = useCallback((id: number, newName: string) => {
+    setProjects(prev => prev.map(p => p.id === id ? { ...p, name: newName } : p));
   }, []);
 
-  const handleAddIntegration = useCallback(
-    (integration: IntegrationType) => {
-      let prompt = ""
-      switch(integration) {
-        case "convex":
-            prompt = "Please integrate Convex. I need to set up a basic backend with a simple database table. Show me how to initialize the Convex client and perform a basic query.";
-            break;
-        case "firecrawl":
-            prompt = "Integrate Firecrawl. I want to add a feature to scrape a website's content. Add a UI with an input for a URL and a button to start scraping. Explain how to use the Firecrawl API.";
-            break;
-        case "vapi":
-            prompt = "Integrate Vapi for voice conversations. Set up the basic Vapi client and add a button to start a voice call.";
-            break;
-        case "better_auth":
-            prompt = "Integrate Better Auth for user authentication. Show me how to add their sign-in component to my app.";
-            break;
-        case "resend":
-            prompt = "Integrate Resend for sending emails. Create a contact form with 'name', 'email', and 'message' fields and a 'Send' button. Explain how to use the Resend API to send the form data as an email.";
-            break;
-        case "autumnpricing":
-            prompt = "Integrate Autumn Pricing. I need a pricing page that is powered by Autumn. Show me how to set up the client and display different pricing tiers.";
-            break;
-        case "openai":
-            prompt = "Integrate the OpenAI API. I want a simple text input field and a button that sends the text to an OpenAI model and displays the response.";
-            break;
-        case "inkeep":
-            prompt = "Integrate Inkeep for AI-powered search. Add a search bar to the UI that uses Inkeep to search documentation.";
-            break;
-        case "scorecard":
-            prompt = "Integrate Scorecard for evaluating LLM responses. Show me an example of how to send a prompt-response pair to Scorecard for evaluation.";
-            break;
-        case "stripe":
-            prompt = "Please integrate Stripe for payments. I need a simple checkout button that redirects to a Stripe checkout page. Explain how to set up the necessary server-side logic and how to use the Stripe client-side library.";
-            break;
-      }
+  const handleRestoreFileSystem = useCallback((fs: FileSystem) => {
+    setActiveProjectFileSystem(fs);
+    setActiveProjectMessages(prev => [...prev, { id: Date.now().toString(), role: 'ai', text: 'I have restored the project to the selected checkpoint.' }]);
+  }, [activeProjectId]);
 
-      if (prompt) {
-        sendMessage(prompt, null)
-        setSettingsOpen(false)
-        setDrawerOpen(false)
-        setSelectedIntegration(null);
-      }
-    },
-    [sendMessage],
-  )
+  const handleDownloadZip = useCallback(async () => {
+    const zip = new JSZip();
+    for (const path in activeProject.fileSystem) {
+      zip.file(path, activeProject.fileSystem[path].content);
+    }
+    const blob = await zip.generateAsync({ type: "blob" });
+    const link = document.createElement("a");
+    link.href = URL.createObjectURL(blob);
+    link.download = `${activeProject.name.replace(/\s+/g, '_') || 'suvo-project'}.zip`;
+    link.click();
+    URL.revokeObjectURL(link.href);
+  }, [activeProject]);
+
+  const handleSelectIntegration = useCallback((type: IntegrationType) => setSelectedIntegration(INTEGRATIONS.find(i => i.id === type) || null), []);
+  const handleAddIntegration = useCallback((type: IntegrationType) => {
+      const integration = INTEGRATIONS.find(i => i.id === type);
+      if (!integration) return;
+      sendMessage(`Please integrate ${integration.name}. ${integration.description}`, null);
+      setSelectedIntegration(null);
+  }, [sendMessage]);
   
   return (
     <>
-      <div
-        className={`relative h-screen w-screen bg-slate-50 dark:bg-zinc-950 text-slate-900 dark:text-white flex flex-col overflow-hidden`}
-      >
-        <Header
-          onMenuClick={toggleDrawer}
-          onUpgradeClick={handleUpgradeClick}
-          onSelectIntegration={handleSelectIntegration}
-          onDownloadZip={handleDownloadZip}
-        />
+      <div className="relative h-screen w-screen bg-slate-50 dark:bg-zinc-950 text-slate-900 dark:text-white flex flex-col overflow-hidden">
+        <Header onMenuClick={toggleDrawer} onUpgradeClick={handleUpgradeClick} onSelectIntegration={handleSelectIntegration} onDownloadZip={handleDownloadZip} />
         <main className="flex-1 flex overflow-hidden pt-16">
           <ResizablePanel isLeftPanelHidden={isApiPanelHidden}>
-            <ChatPanel
-              messages={messages}
-              onSendMessage={sendMessage}
-              aiStatus={aiStatus}
-              stopGeneration={stopGeneration}
-              onRestoreFileSystem={handleRestoreFileSystem}
-              onClearChat={handleClearChat}
-              operationMode={operationMode}
-              onSetOperationMode={setOperationMode}
-            />
-            <MainDisplayPanel
-              fileSystem={fileSystem}
-              activeFile={activeFile}
-              onActiveFileChange={setActiveFile}
-              theme={'dark'}
-              isPanelHidden={isApiPanelHidden}
-              togglePanel={toggleApiPanel}
-            />
+            <ChatPanel messages={messages} onSendMessage={sendMessage} aiStatus={aiStatus} stopGeneration={stopGeneration} onRestoreFileSystem={handleRestoreFileSystem} onClearChat={handleClearChat} operationMode={operationMode} onSetOperationMode={setOperationMode} />
+            <MainDisplayPanel fileSystem={activeProject.fileSystem} activeFile={activeProject.fileSystem['src/App.tsx'] ? 'src/App.tsx' : Object.keys(activeProject.fileSystem)[0]} onActiveFileChange={() => {}} theme={'dark'} isPanelHidden={isApiPanelHidden} togglePanel={toggleApiPanel} />
           </ResizablePanel>
         </main>
-        <SideDrawer
-          isOpen={isDrawerOpen}
-          onClose={toggleDrawer}
-          onOpenSettings={handleOpenSettings}
-          onUpgradeClick={handleUpgradeClick}
-          onCreateNewProject={handleCreateNewProject}
-        />
+        <SideDrawer isOpen={isDrawerOpen} onClose={toggleDrawer} onOpenSettings={handleOpenSettings} onUpgradeClick={handleUpgradeClick} projects={projects} activeProjectId={activeProjectId} onCreateNewProject={handleCreateNewProject} onDeleteProject={handleDeleteProject} onRenameProject={handleRenameProject} onSwitchProject={handleSwitchProject} />
         <PricingModal isOpen={isPricingModalOpen} onClose={() => setPricingModalOpen(false)} />
       </div>
-
-      {isSettingsOpen && (
-        <SettingsPage
-          onClose={() => setSettingsOpen(false)}
-          onClearChat={handleClearChat}
-          onUpgradeClick={handleUpgradeClick}
-          openAIAPIKey={openAIAPIKey}
-          onSetOpenAIAPIKey={handleSetOpenAIAPIKey}
-          initialTab={initialSettingsTab}
-        />
-      )}
-
-      {selectedIntegration && (
-        <IntegrationDetailModal
-          integration={selectedIntegration}
-          onClose={() => setSelectedIntegration(null)}
-          onAdd={handleAddIntegration}
-        />
-      )}
+      {isSettingsOpen && <SettingsPage onClose={() => setSettingsOpen(false)} onClearChat={handleClearChat} onUpgradeClick={handleUpgradeClick} openAIAPIKey={openAIAPIKey} onSetOpenAIAPIKey={handleSetOpenAIAPIKey} initialTab={initialSettingsTab} />}
+      {selectedIntegration && <IntegrationDetailModal integration={selectedIntegration} onClose={() => setSelectedIntegration(null)} onAdd={handleAddIntegration} />}
     </>
   )
 }
@@ -438,13 +374,10 @@ const MainApplication: React.FC = () => {
   return <HomePage onLaunchWorkspace={handleLaunchWorkspace} />;
 };
 
+const App: React.FC = () => (
+  <Routes>
+    <Route path="/*" element={<MainApplication />} />
+  </Routes>
+);
 
-const App: React.FC = () => {
-  return (
-    <Routes>
-      <Route path="/*" element={<MainApplication />} />
-    </Routes>
-  )
-}
-
-export default App
+export default App;

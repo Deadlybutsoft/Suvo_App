@@ -16,7 +16,7 @@ const AuthInput: React.FC<{ id: string, type: string, placeholder: string, value
     disabled={disabled}
     placeholder={placeholder}
     autoComplete="email"
-    className="w-full p-3 bg-black border border-zinc-600 rounded-none text-white placeholder-zinc-500 focus:ring-1 focus:ring-white outline-none transition disabled:opacity-50"
+    className="w-full p-3 bg-black border border-zinc-600 rounded-md text-white placeholder-zinc-500 focus:ring-1 focus:ring-white outline-none transition disabled:opacity-50"
   />
 );
 
@@ -56,7 +56,7 @@ export const AuthPage: React.FC<AuthPageProps> = ({ onClose }) => {
       onClick={handleClose}
     >
       <div
-        className={`relative w-full max-w-md bg-black border border-zinc-700 text-slate-800 dark:text-zinc-200 shadow-2xl overflow-hidden rounded-none transition-all duration-300 ${isVisible ? 'scale-100 opacity-100' : 'scale-95 opacity-0'}`}
+        className={`relative w-full max-w-md bg-black border border-zinc-700 text-slate-800 dark:text-zinc-200 shadow-2xl overflow-hidden rounded-lg transition-all duration-300 ${isVisible ? 'scale-100 opacity-100' : 'scale-95 opacity-0'}`}
         onClick={(e) => e.stopPropagation()}
       >
         <button onClick={handleClose} disabled={loading} className="absolute top-4 right-4 p-1.5 text-slate-400 dark:text-zinc-500 rounded-full hover:bg-slate-100 dark:hover:bg-zinc-800 z-20 disabled:opacity-50">
@@ -69,12 +69,12 @@ export const AuthPage: React.FC<AuthPageProps> = ({ onClose }) => {
                 <p className="text-slate-500 dark:text-zinc-400 mb-8">Enter your email to log in or sign up.</p>
 
                 {error && (
-                    <div className="bg-red-900/50 border border-red-500/50 text-red-300 px-4 py-3 relative mb-6 text-sm text-left rounded-none" role="alert">
+                    <div className="bg-red-900/50 border border-red-500/50 text-red-300 px-4 py-3 relative mb-6 text-sm text-left rounded-md" role="alert">
                         <span className="block sm:inline">{error}</span>
                     </div>
                 )}
                 {message && (
-                     <div className="bg-green-900/50 border border-green-500/50 text-green-300 px-4 py-3 relative mb-6 text-sm text-left rounded-none" role="alert">
+                     <div className="bg-green-900/50 border border-green-500/50 text-green-300 px-4 py-3 relative mb-6 text-sm text-left rounded-md" role="alert">
                         <span className="block sm:inline">{message}</span>
                     </div>
                 )}
@@ -82,7 +82,7 @@ export const AuthPage: React.FC<AuthPageProps> = ({ onClose }) => {
                 <form onSubmit={handleAuthAction} className="space-y-4">
                     <AuthInput id="email" type="email" placeholder="Email" value={email} onChange={e => setEmail(e.target.value)} disabled={loading || !!message} />
 
-                    <button type="submit" disabled={loading || !!message} className="w-full p-3 font-semibold text-black bg-white rounded-none hover:bg-zinc-200 transition-colors flex items-center justify-center disabled:opacity-60">
+                    <button type="submit" disabled={loading || !!message} className="w-full p-3 font-semibold text-black bg-white rounded-md hover:bg-zinc-200 transition-colors flex items-center justify-center disabled:opacity-60">
                         {loading ? <SpinnerIcon className="w-6 h-6 text-black" /> : "Continue with Email"}
                     </button>
                 </form>

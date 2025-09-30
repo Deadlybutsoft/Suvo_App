@@ -40,7 +40,7 @@ export const PricingModal: React.FC<PricingModalProps> = ({ isOpen, onClose }) =
             onClick={handleClose}
         >
             <div
-                className={`relative w-full max-w-4xl bg-black border border-zinc-700 shadow-2xl text-white transition-all duration-300 overflow-hidden ${isVisible ? 'scale-100 opacity-100' : 'scale-95 opacity-0'}`}
+                className={`relative w-full max-w-4xl bg-black border border-zinc-700 shadow-2xl text-white transition-all duration-300 overflow-hidden rounded-xl ${isVisible ? 'scale-100 opacity-100' : 'scale-95 opacity-0'}`}
                 onClick={(e) => e.stopPropagation()}
             >
                 <button onClick={handleClose} className="absolute top-4 right-4 p-1.5 rounded-full text-zinc-500 hover:bg-zinc-800 z-20">
@@ -55,14 +55,14 @@ export const PricingModal: React.FC<PricingModalProps> = ({ isOpen, onClose }) =
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-stretch">
                         {/* Free Plan */}
-                        <div className="bg-black p-8 flex flex-col h-full border border-zinc-700">
+                        <div className="bg-black p-8 flex flex-col h-full border border-zinc-700 rounded-lg">
                             <h3 className="text-2xl font-semibold">Free</h3>
                             <p className="mt-2 text-zinc-400">For getting started & personal projects.</p>
                             <div className="mt-6">
                                 <span className="text-5xl font-bold">$0</span>
                                 <span className="text-zinc-400 text-lg"> / month</span>
                             </div>
-                            <button className="w-full mt-8 py-3 px-6 font-semibold bg-zinc-900 border border-zinc-600 text-zinc-400 transition-colors rounded-none cursor-default">
+                            <button className="w-full mt-8 py-3 px-6 font-semibold bg-zinc-900 border border-zinc-600 text-zinc-400 transition-colors rounded-md cursor-default">
                                 Your Current Plan
                             </button>
                             <ul className="space-y-4 text-zinc-300 mt-8 text-left flex-grow">
@@ -72,8 +72,8 @@ export const PricingModal: React.FC<PricingModalProps> = ({ isOpen, onClose }) =
                         </div>
 
                         {/* Pro Plan */}
-                        <div className="bg-black p-8 flex flex-col relative border-2 border-white">
-                            <div className="absolute -top-4 left-1/2 -translate-x-1/2 bg-white text-black px-4 py-1.5 text-xs font-semibold uppercase tracking-wider rounded-none">
+                        <div className="bg-black p-8 flex flex-col relative border-2 border-white rounded-lg">
+                            <div className="absolute -top-4 left-1/2 -translate-x-1/2 bg-white text-black px-4 py-1.5 text-xs font-semibold uppercase tracking-wider rounded-full">
                                 Most Popular
                             </div>
                             <h3 className="text-2xl font-semibold">Pro</h3>
@@ -82,7 +82,7 @@ export const PricingModal: React.FC<PricingModalProps> = ({ isOpen, onClose }) =
                                 <span className="text-5xl font-bold">$25</span>
                                 <span className="text-zinc-400 text-lg"> / month</span>
                             </div>
-                            <button className="w-full mt-8 py-3 px-6 font-semibold bg-white hover:bg-zinc-200 text-black transition-colors rounded-none">
+                            <button className="w-full mt-8 py-3 px-6 font-semibold bg-white hover:bg-zinc-200 text-black transition-colors rounded-md">
                                 Upgrade to Pro
                             </button>
                             <ul className="space-y-4 text-zinc-300 mt-8 text-left flex-grow">

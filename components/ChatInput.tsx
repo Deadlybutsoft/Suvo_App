@@ -94,7 +94,7 @@ export const ChatInput: React.FC<ChatInputProps> = ({
   };
 
   return (
-    <div className="relative bg-black border border-zinc-400 flex flex-col text-white shadow-2xl shadow-black/50">
+    <div className="relative bg-black border border-zinc-400 flex flex-col text-white rounded-lg">
       <input 
         type="file" 
         ref={fileInputRef} 
@@ -106,7 +106,7 @@ export const ChatInput: React.FC<ChatInputProps> = ({
       {imagePreview && (
         <div className="p-3 border-b border-zinc-700">
             <div className="relative inline-block">
-                <img src={imagePreview} alt="Upload preview" className="h-24 w-auto max-w-full object-contain rounded" />
+                <img src={imagePreview} alt="Upload preview" className="h-24 w-auto max-w-full object-contain rounded-md" />
                 <button
                     onClick={handleRemoveImage}
                     className="absolute -top-2 -right-2 bg-zinc-900/80 hover:bg-zinc-800 text-white p-1 rounded-full transition-all"
@@ -123,7 +123,7 @@ export const ChatInput: React.FC<ChatInputProps> = ({
           <p className="text-sm font-semibold text-zinc-300 px-2">Chat Mode</p>
           <button
             onClick={() => onSetOperationMode('gemini-2.5-flash')}
-            className="p-1 text-zinc-400 hover:text-white hover:bg-zinc-800 rounded-none transition-colors"
+            className="p-1 text-zinc-400 hover:text-white hover:bg-zinc-800 rounded-md transition-colors"
             aria-label="Exit Chat Mode"
             title="Exit Chat Mode"
           >
@@ -148,7 +148,7 @@ export const ChatInput: React.FC<ChatInputProps> = ({
             <div ref={addMenuRef} className="relative">
               <button 
                 onClick={() => setAddMenuOpen(prev => !prev)}
-                className={`w-11 h-11 flex items-center justify-center transition-all duration-300 text-zinc-300 hover:text-white disabled:opacity-50 ${isAddMenuOpen ? 'bg-zinc-800' : 'bg-zinc-900 hover:bg-zinc-800 border border-zinc-600'}`}
+                className={`w-11 h-11 flex items-center justify-center transition-all duration-300 text-zinc-300 hover:text-white disabled:opacity-50 rounded-md ${isAddMenuOpen ? 'bg-zinc-800' : 'bg-zinc-900 hover:bg-zinc-800 border border-zinc-600'}`}
                 disabled={isGenerating}
                 aria-label={isAddMenuOpen ? 'Close menu' : 'Add content'}
                 title={isAddMenuOpen ? 'Close menu' : 'Add content'}
@@ -199,7 +199,7 @@ export const ChatInput: React.FC<ChatInputProps> = ({
             {isGenerating ? (
               <button
                 onClick={stopGeneration}
-                className="w-11 h-11 flex-shrink-0 flex items-center justify-center bg-red-600 hover:bg-red-700 text-white transition-colors"
+                className="w-11 h-11 flex-shrink-0 flex items-center justify-center bg-red-600 hover:bg-red-700 text-white transition-colors rounded-md"
                 aria-label="Stop generation"
               >
                  <StopIcon className="h-5 w-5" />
@@ -208,7 +208,7 @@ export const ChatInput: React.FC<ChatInputProps> = ({
               <button
                 onClick={handleSend}
                 disabled={isGenerating || (!prompt.trim() && !image)}
-                className="w-11 h-11 flex-shrink-0 flex items-center justify-center bg-white text-black transition-colors disabled:bg-zinc-800 disabled:text-zinc-500 disabled:cursor-not-allowed"
+                className="w-11 h-11 flex-shrink-0 flex items-center justify-center bg-white text-black transition-colors disabled:bg-zinc-800 disabled:text-zinc-500 disabled:cursor-not-allowed rounded-md"
                 aria-label="Send message"
               >
                 <ArrowRightIcon className="h-5 w-5" />

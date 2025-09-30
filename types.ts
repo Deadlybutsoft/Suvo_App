@@ -29,6 +29,13 @@ export interface FileSystem {
   [path: string]: FileData;
 }
 
+export interface Project {
+  id: number;
+  name: string;
+  fileSystem: FileSystem;
+  messages: Message[];
+}
+
 export type AiStatus = 'idle' | 'thinking' | 'streaming';
 
 export type AppTheme = 'light' | 'dark' | 'system';

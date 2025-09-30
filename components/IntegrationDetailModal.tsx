@@ -38,7 +38,7 @@ export const IntegrationDetailModal: React.FC<IntegrationDetailModalProps> = ({ 
       onClick={handleClose}
     >
       <div
-        className={`relative w-full max-w-lg bg-black border border-zinc-700 shadow-2xl text-white transition-all duration-300 rounded-none ${isVisible ? 'scale-100 opacity-100' : 'scale-95 opacity-0'}`}
+        className={`relative w-full max-w-lg bg-black border border-zinc-700 shadow-2xl text-white transition-all duration-300 rounded-lg ${isVisible ? 'scale-100 opacity-100' : 'scale-95 opacity-0'}`}
         onClick={(e) => e.stopPropagation()}
       >
         <button onClick={handleClose} className="absolute top-4 right-4 p-1.5 rounded-full text-zinc-500 hover:bg-zinc-800 z-20">
@@ -58,14 +58,14 @@ export const IntegrationDetailModal: React.FC<IntegrationDetailModalProps> = ({ 
                 href={docsUrl}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="flex items-center gap-2 px-4 py-2 text-sm font-semibold text-zinc-300 hover:text-white hover:bg-zinc-800 transition-colors rounded-none border border-zinc-700"
+                className="flex items-center gap-2 px-4 py-2 text-sm font-semibold text-zinc-300 hover:text-white hover:bg-zinc-800 transition-colors rounded-md border border-zinc-700"
             >
                 <ExternalLinkIcon className="w-4 h-4" />
                 <span>Docs</span>
             </a>
             <button
                 onClick={() => onAdd(id)}
-                className="flex items-center gap-2 px-5 py-2 text-sm font-semibold bg-white text-black hover:bg-zinc-200 transition-colors rounded-none"
+                className="flex items-center gap-2 px-5 py-2 text-sm font-semibold bg-white text-black hover:bg-zinc-200 transition-colors rounded-md"
             >
                 <SparklesIcon className="w-4 h-4" />
                 <span>Add Integration</span>

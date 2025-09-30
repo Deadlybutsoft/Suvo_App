@@ -299,14 +299,14 @@ export const PreviewView: React.FC<PreviewViewProps> = ({ fileSystem, viewport, 
         <div className="flex-1 flex items-center justify-center overflow-auto p-2">
             <div
                 ref={containerRef}
-                className="preview-container w-full h-full max-w-full max-h-full bg-white shadow-lg rounded-none transition-all duration-300 ease-in-out"
+                className="preview-container w-full h-full max-w-full max-h-full bg-white shadow-lg rounded-lg transition-all duration-300 ease-in-out"
                 style={{ width: viewportWidths[viewport] }}
             >
                 <iframe
                     ref={iframeRef}
                     src={previewUrl ?? 'about:blank'}
                     title="Live Preview"
-                    className="w-full h-full border-0 rounded-none"
+                    className="w-full h-full border-0 rounded-lg"
                     sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-modals"
                 />
             </div>

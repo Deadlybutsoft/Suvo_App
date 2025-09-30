@@ -17,7 +17,7 @@ export const ModernConsole: React.FC<ModernConsoleProps> = ({ onClose }) => {
         <button
           onClick={onClose}
           title="Close Console"
-          className="p-1 rounded-none hover:bg-zinc-800 text-zinc-400"
+          className="p-1 rounded-md hover:bg-zinc-800 text-zinc-400"
         >
           <ChevronDownIcon className="w-5 h-5" />
         </button>

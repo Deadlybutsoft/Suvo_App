@@ -23,7 +23,7 @@ const CodeVersionBlock: React.FC<{ changes: FileChange[], version: number, isStr
     const [isExpanded, setIsExpanded] = useState(true);
     
     return (
-        <div className={`mt-4 border border-slate-200 dark:border-zinc-600 bg-slate-50 dark:bg-zinc-900 rounded-none overflow-hidden ${isStreaming ? 'animate-pulse' : ''}`}>
+        <div className={`mt-4 border border-slate-200 dark:border-zinc-600 bg-slate-50 dark:bg-zinc-900 rounded-lg overflow-hidden ${isStreaming ? 'animate-pulse' : ''}`}>
             <div 
                 className="p-3 flex items-center justify-between cursor-pointer hover:bg-slate-100 dark:hover:bg-zinc-800 transition-colors"
                 onClick={() => setIsExpanded(!isExpanded)}
@@ -60,7 +60,7 @@ const CodeVersionBlock: React.FC<{ changes: FileChange[], version: number, isStr
 
 const UserMessage: React.FC<{ message: MessageType }> = ({ message }) => {
     return (
-        <div className="bg-zinc-900 border border-zinc-700 px-4 py-3 rounded-none">
+        <div className="bg-zinc-900 border border-zinc-700 px-4 py-3 rounded-lg">
             {message.imageUrl && (
                 <div className="mb-2">
                     <img src={message.imageUrl} alt="User upload" className="max-w-full h-auto max-h-64 rounded-lg" />
@@ -109,7 +109,7 @@ const AiMessage: React.FC<{ message: MessageType, onRestoreFileSystem: (fs: File
                 <div className="mt-4">
                     <button 
                         onClick={handleRestore}
-                        className="flex items-center gap-2 px-3 py-1.5 text-xs font-medium bg-slate-100 dark:bg-zinc-800 text-slate-600 dark:text-zinc-300 rounded-none hover:bg-slate-200 dark:hover:bg-zinc-700 transition-colors"
+                        className="flex items-center gap-2 px-3 py-1.5 text-xs font-medium bg-slate-100 dark:bg-zinc-800 text-slate-600 dark:text-zinc-300 rounded-md hover:bg-slate-200 dark:hover:bg-zinc-700 transition-colors"
                     >
                         <ArrowLeftIcon className="w-4 h-4" />
                         <span>Undo</span>
@@ -118,7 +118,7 @@ const AiMessage: React.FC<{ message: MessageType, onRestoreFileSystem: (fs: File
             )}
             
             {message.error && (
-                 <div className="mt-4 flex items-start gap-3 rounded-none border border-red-900 bg-red-900/20 p-4">
+                 <div className="mt-4 flex items-start gap-3 rounded-lg border border-red-900 bg-red-900/20 p-4">
                     <div className="flex-shrink-0">
                         <ExclamationTriangleIcon className="h-5 w-5 text-red-400" />
                     </div>

@@ -96,7 +96,7 @@ export const HomePage: React.FC<HomePageProps> = ({ onLaunchWorkspace }) => {
                 <Link to="/" className="text-2xl font-bold text-white select-none font-logo">Suvo</Link>
                 <button 
                     onClick={() => setIsAuthOpen(true)}
-                    className="px-4 py-2 bg-transparent text-white border border-white rounded-none hover:bg-white hover:text-black transition-colors font-semibold"
+                    className="px-4 py-2 bg-transparent text-white border border-white rounded-md hover:bg-white hover:text-black transition-colors font-semibold"
                 >
                     Sign In
                 </button>
@@ -108,7 +108,7 @@ export const HomePage: React.FC<HomePageProps> = ({ onLaunchWorkspace }) => {
             <main className="relative flex-grow flex flex-col items-center justify-center text-center w-full max-w-4xl mx-auto z-10 px-4 pt-10 pb-8">
               <button 
                 onClick={() => onLaunchWorkspace()} 
-                className="mb-8 px-4 py-2 bg-yellow-400 text-black rounded-none hover:bg-yellow-500 transition-colors font-semibold text-sm"
+                className="mb-8 px-4 py-2 bg-yellow-400 text-black rounded-md hover:bg-yellow-500 transition-colors font-semibold text-sm"
               >
                 DEV MODE: Launch Workspace
               </button>
@@ -119,17 +119,17 @@ export const HomePage: React.FC<HomePageProps> = ({ onLaunchWorkspace }) => {
                 Suvo makes ideas go live: apps, functions, <span className="text-white font-medium">integrations</span>, no fluff.
               </p>
 
-              <div className="flex items-center border border-zinc-400 mt-12 mb-6">
+              <div className="flex items-center gap-2 mt-12 mb-6">
                 <button 
                     onClick={() => setMode('clone')}
-                    className={`flex items-center gap-2 px-6 py-3 text-base font-semibold transition-colors ${mode === 'clone' ? 'bg-white text-black' : 'text-zinc-400 hover:text-white bg-black/20 backdrop-blur-sm'}`}
+                    className={`flex items-center gap-2 px-6 py-3 text-base font-semibold transition-colors rounded-md border border-zinc-400 ${mode === 'clone' ? 'bg-white text-black' : 'text-zinc-400 hover:text-white bg-black/20 backdrop-blur-sm'}`}
                 >
                     <LinkIcon className="w-5 h-5" />
                     Clone a Site
                 </button>
                 <button 
                     onClick={() => setMode('prompt')}
-                    className={`flex items-center gap-2 px-6 py-3 text-base font-semibold transition-colors ${mode === 'prompt' ? 'bg-white text-black' : 'text-zinc-400 hover:text-white bg-black/20 backdrop-blur-sm'}`}
+                    className={`flex items-center gap-2 px-6 py-3 text-base font-semibold transition-colors rounded-md border border-zinc-400 ${mode === 'prompt' ? 'bg-white text-black' : 'text-zinc-400 hover:text-white bg-black/20 backdrop-blur-sm'}`}
                 >
                     <SparklesIcon className="w-5 h-5" />
                     Write Prompt
@@ -146,7 +146,7 @@ export const HomePage: React.FC<HomePageProps> = ({ onLaunchWorkspace }) => {
                         onSetOperationMode={() => {}}
                     />
                 ) : (
-                    <div className="relative bg-black border border-zinc-400 flex items-center text-white shadow-2xl shadow-black/50 p-4 pl-6">
+                    <div className="relative bg-black border border-zinc-400 flex items-center text-white shadow-2xl shadow-black/50 p-4 pl-6 rounded-lg">
                         <LinkIcon className="w-6 h-6 text-zinc-500 mr-4 flex-shrink-0" />
                         <input
                             type="url"
@@ -159,7 +159,7 @@ export const HomePage: React.FC<HomePageProps> = ({ onLaunchWorkspace }) => {
                         <button
                             onClick={handleClone}
                             disabled={!cloneUrl.trim() || isLoading}
-                            className="w-11 h-11 ml-4 flex-shrink-0 flex items-center justify-center bg-white text-black transition-colors disabled:bg-zinc-800 disabled:text-zinc-500 disabled:cursor-not-allowed"
+                            className="w-11 h-11 ml-4 flex-shrink-0 flex items-center justify-center bg-white text-black transition-colors disabled:bg-zinc-800 disabled:text-zinc-500 disabled:cursor-not-allowed rounded-md"
                             aria-label="Clone website"
                         >
                             {isLoading ? <SpinnerIcon className="h-5 w-5" /> : <ArrowRightIcon className="h-5 w-5" />}
