@@ -14,8 +14,8 @@ export const HomePage: React.FC<HomePageProps> = ({ onLaunchWorkspace }) => {
   const [cloneUrl, setCloneUrl] = useState('');
   const [isLoading, setIsLoading] = useState(false);
 
-  // FIX: Updated function signature to accept an array of files (`File[]`) from ChatInput.
-  // The logic now takes the first image from the array to maintain compatibility with `onLaunchWorkspace`, which expects a single image.
+  // Fix: Updated function signature to accept an array of files (`File[]`) from ChatInput
+  // and correctly handle the first image for onLaunchWorkspace.
   const handleSendMessage = (prompt: string, images: File[]) => {
     const image = images.length > 0 ? images[0] : null;
     const isInputProvided = prompt.trim() !== '' || image !== null;
@@ -147,7 +147,7 @@ export const HomePage: React.FC<HomePageProps> = ({ onLaunchWorkspace }) => {
                         stopGeneration={() => {}}
                         operationMode={'gemini-2.5-flash'}
                         onSetOperationMode={() => {}}
-                        // FIX: Pass null for openAIAPIKey and a no-op for onOpenSettings as they are not available on the home page.
+                        // Fix: Pass null for `openAIAPIKey` and a no-op for `onOpenSettings` as these props are not used on the home page.
                         openAIAPIKey={null}
                         onOpenSettings={() => {}}
                     />

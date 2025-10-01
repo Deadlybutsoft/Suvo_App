@@ -24,9 +24,8 @@ function App() {
     setError(null);
     try {
       // 1. Fetch the checkout session ID from your backend
-      // FIX: The mock `fetchCheckoutSession` returns an object with only an `id` property.
-      // The original code was trying to destructure an `error` property which does not exist on the returned type, causing a TypeScript error.
-      // The destructuring has been updated and the corresponding error check has been removed to align with the mock's return type.
+      // Fix: Updated destructuring to match the return type of `fetchCheckoutSession`.
+      // The function returns an object with only an `id` property, so destructuring an `error` property was incorrect.
       const { id: sessionId } = await fetchCheckoutSession();
 
       // 2. Load the Stripe.js script

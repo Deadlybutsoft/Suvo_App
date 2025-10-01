@@ -169,11 +169,11 @@ export const ColorPicker: React.FC<{ onSelectColor: (color: string) => void }> =
                 {mode === 'gradient' && (
                     <div className="space-y-2">
                         <div ref={gradientBarRef} onMouseDown={onDragStopStart} onTouchStart={onDragStopStart} className="relative w-full h-8 cursor-pointer rounded-md" style={{ background: gradientCss }}>
-                            {/* FIX: Replaced unsafe spread of Object.values with a type-safe call to rgbaToCss. */}
                             {stops.map(stop => {
                                 const rgba = hsvToRgba(stop.h, stop.s, stop.v, stop.a);
                                 return (
                                 <button key={stop.id} onClick={() => setActiveStopId(stop.id)} className={`absolute -top-1 w-5 h-10 rounded-sm focus:outline-none transition-transform duration-100 ${activeStopId === stop.id ? 'scale-110 z-10' : ''}`} style={{ left: `calc(${stop.position * 100}% - 10px)` }}>
+                                    {/* Fix: Replaced an unsafe spread of `Object.values` with a type-safe call to `rgbaToCss` to ensure color properties are passed correctly. */}
                                     <div className={`w-full h-full rounded-sm border-2 ${activeStopId === stop.id ? 'border-white' : 'border-zinc-400'}`} style={{ backgroundColor: rgbaToCss(rgba.r, rgba.g, rgba.b, rgba.a) }} />
                                 </button>
                                 );

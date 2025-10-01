@@ -1,6 +1,6 @@
-import React, { useState, useRef, useEffect } from 'react';
-import { generateImage, AspectRatio } from '../../services/openai';
-import { SpinnerIcon, CheckIcon, SparklesIcon, ChevronDownIcon } from '../icons';
+import React, { useState } from 'react';
+import { SparklesIcon, CheckIcon, SpinnerIcon } from '../icons';
+import { generateImage } from '../../services/geminiService';
 
 const urlToDataFile = async (base64: string, filename: string): Promise<File> => {
     const res = await fetch(`data:image/jpeg;base64,${base64}`);
@@ -8,188 +8,155 @@ const urlToDataFile = async (base64: string, filename: string): Promise<File> =>
     return new File([blob], filename, { type: 'image/jpeg' });
 };
 
-const aspectRatios: { label: string; value: AspectRatio }[] = [
-    { label: 'Square (1:1)', value: '1:1' },
-    { label: 'Widescreen (16:9)', value: '16:9' },
-    { label: 'Tall (9:16)', value: '9:16' },
-];
-
 interface ImageCreatorProps {
     onSelectImages: (files: File[]) => void;
-    openAIAPIKey: string | null;
-    onOpenSettings: () => void;
 }
 
-export const ImageCreator: React.FC<ImageCreatorProps> = ({ onSelectImages, openAIAPIKey, onOpenSettings }) => {
+const aspectRatios = ['1:1', '4:3', '3:4', '16:9', '9:16'];
+const imageCounts = [1, 2, 3, 4];
+
+export const ImageCreator: React.FC<ImageCreatorProps> = ({ onSelectImages }) => {
     const [prompt, setPrompt] = useState('');
-    const [aspectRatio, setAspectRatio] = useState<AspectRatio>('1:1');
-    const [numImages, setNumImages] = useState(1);
-    const [generatedImages, setGeneratedImages] = useState<string[]>([]);
-    const [selectedImages, setSelectedImages] = useState<Set<string>>(new Set());
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
-    const [isAspectRatioOpen, setIsAspectRatioOpen] = useState(false);
-    const aspectRatioRef = useRef<HTMLDivElement>(null);
+    const [generatedImages, setGeneratedImages] = useState<{ mimeType: string; data: string }[]>([]);
+    const [selectedIndices, setSelectedIndices] = useState<number[]>([]);
 
-    useEffect(() => {
-        const handleClickOutside = (event: MouseEvent) => {
-            if (aspectRatioRef.current && !aspectRatioRef.current.contains(event.target as Node)) {
-                setIsAspectRatioOpen(false);
-            }
-        };
-        document.addEventListener('mousedown', handleClickOutside);
-        return () => {
-            document.removeEventListener('mousedown', handleClickOutside);
-        };
-    }, []);
+    const [numberOfImages, setNumberOfImages] = useState(1);
+    const [aspectRatio, setAspectRatio] = useState('1:1');
 
-    const handleGenerate = async () => {
-        if (!prompt.trim()) return;
-
-        if (!openAIAPIKey) {
-            setError("OpenAI API key is missing. Please add it in Settings > API Keys.");
-            onOpenSettings();
-            return;
-        }
+    const handleGenerate = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!prompt.trim() || isLoading) return;
 
         setIsLoading(true);
         setError(null);
         setGeneratedImages([]);
-        setSelectedImages(new Set());
+        setSelectedIndices([]);
+
         try {
-            const images = await generateImage(prompt, { numberOfImages: numImages, aspectRatio }, openAIAPIKey);
-            setGeneratedImages(images);
+            const imageData = await generateImage(prompt, { numberOfImages, aspectRatio });
+            setGeneratedImages(imageData);
         } catch (err) {
-            // FIX: The 'err' object from a catch block is of type 'unknown'. Safely handle this by checking if it's an instance of Error before accessing the 'message' property.
-            setError(err instanceof Error ? err.message : 'An unexpected error occurred.');
+            setError(err instanceof Error ? err.message : 'An unknown error occurred.');
         } finally {
             setIsLoading(false);
         }
     };
-    
-    const toggleSelection = (base64: string) => {
-        setSelectedImages(prev => {
-            const next = new Set(prev);
-            if (next.has(base64)) next.delete(base64);
-            else next.add(base64);
-            return next;
-        });
-    };
-    
-    const handleAttach = async () => {
-        if (selectedImages.size === 0) return;
-        const files = await Promise.all(
-            Array.from(selectedImages).map((base64, i) => urlToDataFile(base64, `generated-image-${i}.jpg`))
+
+    const handleToggleSelection = (index: number) => {
+        setSelectedIndices(prev => 
+            prev.includes(index)
+                ? prev.filter(i => i !== index)
+                : [...prev, index]
         );
+    };
+
+    const handleAttach = async () => {
+        if (selectedIndices.length === 0) return;
+        
+        const files = await Promise.all(
+            selectedIndices.map((index, i) => {
+                const image = generatedImages[index];
+                return urlToDataFile(image.data, `generated-image-${i}.jpg`);
+            })
+        );
+        
         onSelectImages(files);
     };
 
-    const selectedAspectRatioLabel = aspectRatios.find(ar => ar.value === aspectRatio)?.label.split(' ')[0] || '1:1';
-
     return (
-        <div className="h-full flex flex-col">
-            <div className="flex-1 overflow-y-auto p-4">
-                {isLoading && (
-                    <div className="h-full flex items-center justify-center">
-                        <SpinnerIcon className="w-10 h-10 text-zinc-500" />
-                    </div>
-                )}
-                {!isLoading && error && (
-                    <div className="h-full flex items-center justify-center text-red-400">
-                        <p className="text-center p-4">{error}</p>
-                    </div>
-                )}
-                {!isLoading && !error && generatedImages.length > 0 && (
-                    <div className={`grid gap-2 ${generatedImages.length > 1 ? 'grid-cols-2' : 'grid-cols-1'}`}>
-                        {generatedImages.map((base64, i) => (
-                           <button key={i} onClick={() => toggleSelection(base64)} className="relative aspect-square group">
-                                <img src={`data:image/jpeg;base64,${base64}`} alt={`Generated image ${i + 1}`} className="w-full h-full object-cover rounded-md" />
-                                {selectedImages.has(base64) && (
-                                    <div className="absolute inset-0 bg-sky-500/50 flex items-center justify-center rounded-md">
-                                        <div className="w-8 h-8 bg-white rounded-full flex items-center justify-center">
-                                            <CheckIcon className="w-6 h-6 text-sky-500" />
-                                        </div>
-                                    </div>
-                                )}
+        <div className="h-full flex flex-col p-4 gap-3">
+            <div className="flex flex-col gap-3 flex-shrink-0">
+                <div>
+                    <label className="text-xs font-medium text-zinc-300 mb-1.5 block">Number of images</label>
+                    <div className="flex bg-zinc-900 p-1 rounded-lg">
+                        {imageCounts.map(num => (
+                            <button key={num} type="button" onClick={() => setNumberOfImages(num)} className={`w-1/4 py-1 text-sm rounded-md transition-colors ${numberOfImages === num ? 'bg-zinc-700 text-white' : 'text-zinc-300 hover:bg-zinc-800'}`}>
+                                {num}
                             </button>
                         ))}
                     </div>
-                )}
-                {!isLoading && !error && generatedImages.length === 0 && (
-                    <div className="h-full flex flex-col items-center justify-center text-center text-zinc-500">
-                        <SparklesIcon className="w-12 h-12 mb-4 text-zinc-600" />
-                        <p className="font-medium text-zinc-400">Images you generate will appear here.</p>
-                        <p className="text-sm">Describe what you want to create and click generate.</p>
-                    </div>
-                )}
-            </div>
-            
-            <div className="flex-shrink-0 p-3 border-t border-zinc-800 space-y-3">
-                <div className="flex items-start gap-2">
-                    <textarea 
-                        value={prompt} 
-                        onChange={e => setPrompt(e.target.value)} 
-                        placeholder="A photorealistic image of..." 
-                        rows={2} 
-                        className="flex-grow resize-none p-2.5 bg-zinc-900 border border-zinc-700 rounded-md text-white placeholder:text-zinc-500 focus:ring-1 focus:ring-white outline-none transition" 
-                    />
-                    <button 
-                        onClick={handleGenerate} 
-                        disabled={isLoading || !prompt.trim()} 
-                        className="w-11 h-11 flex-shrink-0 flex items-center justify-center bg-white text-black rounded-md hover:bg-zinc-200 transition-colors disabled:opacity-50"
-                        title="Generate Image"
-                    >
-                        {isLoading ? <SpinnerIcon className="w-5 h-5" /> : <SparklesIcon className="w-5 h-5" />}
-                    </button>
                 </div>
-                
-                <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                        <div ref={aspectRatioRef} className="relative">
-                            <button 
-                                onClick={() => setIsAspectRatioOpen(p => !p)}
-                                className="flex items-center gap-2 px-3 py-1.5 text-sm bg-zinc-800 hover:bg-zinc-700 text-zinc-300 rounded-md transition-colors"
-                            >
-                                <span>{selectedAspectRatioLabel}</span>
-                                <ChevronDownIcon className={`w-4 h-4 transition-transform ${isAspectRatioOpen ? 'rotate-180' : ''}`} />
+                <div>
+                    <label className="text-xs font-medium text-zinc-300 mb-1.5 block">Aspect ratio</label>
+                     <div className="flex bg-zinc-900 p-1 rounded-lg">
+                        {aspectRatios.map(ratio => (
+                            <button key={ratio} type="button" onClick={() => setAspectRatio(ratio)} className={`w-1/5 py-1 text-xs rounded-md transition-colors ${aspectRatio === ratio ? 'bg-zinc-700 text-white' : 'text-zinc-300 hover:bg-zinc-800'}`}>
+                                {ratio}
                             </button>
-                            {isAspectRatioOpen && (
-                                <div className="absolute bottom-full left-0 mb-1 w-48 bg-zinc-900 border border-zinc-700 shadow-lg z-10 p-1 rounded-md">
-                                    {aspectRatios.map(ar => (
-                                        <button 
-                                            key={ar.value}
-                                            onClick={() => { setAspectRatio(ar.value); setIsAspectRatioOpen(false); }}
-                                            className="w-full text-left text-sm px-3 py-1.5 rounded hover:bg-zinc-800"
-                                        >
-                                            {ar.label}
-                                        </button>
-                                    ))}
-                                </div>
-                            )}
-                        </div>
-
-                        <div className="flex items-center p-0.5 bg-zinc-900 border border-zinc-700 rounded-md">
-                            {[1, 2, 4].map(n => (
-                                <button 
-                                    key={n}
-                                    onClick={() => setNumImages(n)}
-                                    className={`px-3 py-1 text-sm rounded transition-colors ${numImages === n ? 'bg-zinc-700 text-white' : 'text-zinc-400 hover:bg-zinc-800'}`}
-                                >
-                                    {n}
-                                </button>
-                            ))}
-                        </div>
+                        ))}
                     </div>
-
-                    <button
-                        onClick={handleAttach}
-                        disabled={selectedImages.size === 0}
-                        className="px-4 py-1.5 font-semibold bg-white text-black rounded-md hover:bg-zinc-200 transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-sm"
-                    >
-                        {selectedImages.size > 0 ? `Attach ${selectedImages.size}` : 'Attach'}
-                    </button>
                 </div>
             </div>
+
+            <div className="flex-1 my-2 flex items-center justify-center bg-zinc-900/50 rounded-lg overflow-y-auto">
+                {isLoading ? (
+                    <div className="flex flex-col items-center justify-center text-zinc-400">
+                        <SpinnerIcon className="h-8 w-8 text-white mb-2" />
+                        <p>Generating images...</p>
+                    </div>
+                ) : error ? (
+                    <div className="text-red-400 text-center p-4">
+                        <p>Error: {error}</p>
+                    </div>
+                ) : generatedImages.length > 0 ? (
+                    <div className={`w-full h-full p-2 grid gap-2 ${generatedImages.length > 1 ? 'grid-cols-2' : 'grid-cols-1'}`}>
+                       {generatedImages.map((image, index) => {
+                            const isSelected = selectedIndices.includes(index);
+                            return (
+                               <button
+                                   key={index}
+                                   type="button"
+                                   onClick={() => handleToggleSelection(index)}
+                                   className={`relative rounded-lg overflow-hidden focus:outline-none ring-offset-2 ring-offset-zinc-950 transition-all duration-200 group ${isSelected ? 'ring-2 ring-white' : 'ring-0'}`}
+                                   style={{ aspectRatio: aspectRatio.replace(':', '/') }}
+                               >
+                                   <img
+                                       src={`data:${image.mimeType};base64,${image.data}`}
+                                       alt={`Generated image ${index + 1}`}
+                                       className="w-full h-full object-cover transition-transform duration-200 group-hover:scale-105"
+                                   />
+                                   {isSelected && (
+                                       <div className="absolute inset-0 bg-black/60 flex items-center justify-center">
+                                           <div className="w-8 h-8 bg-white rounded-full flex items-center justify-center ring-4 ring-black/30">
+                                               <CheckIcon className="w-5 h-5 text-zinc-900" />
+                                           </div>
+                                       </div>
+                                   )}
+                               </button>
+                           )
+                       })}
+                    </div>
+                ) : (
+                    <div className="text-center text-zinc-500 p-4">
+                        <SparklesIcon className="w-12 h-12 mx-auto mb-2" />
+                        <p>Your generated images will appear here.</p>
+                    </div>
+                )}
+            </div>
+
+            <form onSubmit={handleGenerate} className="flex-shrink-0 flex flex-col gap-2">
+                <textarea
+                    value={prompt}
+                    onChange={(e) => setPrompt(e.target.value)}
+                    placeholder="e.g., A cute cat astronaut in space, watercolor..."
+                    className="w-full bg-zinc-900 border-zinc-700 rounded-lg py-2 px-3 focus:ring-1 focus:ring-white focus:outline-none text-zinc-200 placeholder-zinc-500 text-sm h-16 resize-none"
+                    disabled={isLoading}
+                    aria-label="Image generation prompt"
+                />
+                {generatedImages.length > 0 ? (
+                    <button type="button" onClick={handleAttach} disabled={selectedIndices.length === 0} className="w-full flex items-center justify-center gap-2 bg-white text-black font-semibold py-2 rounded-lg hover:bg-zinc-200 transition-colors disabled:bg-zinc-800 disabled:text-zinc-500 disabled:cursor-not-allowed">
+                        <CheckIcon className="w-5 h-5" />
+                        Attach {selectedIndices.length > 0 ? `${selectedIndices.length} Image${selectedIndices.length > 1 ? 's' : ''}` : 'Image(s)'}
+                    </button>
+                ) : (
+                    <button type="submit" disabled={isLoading || !prompt.trim()} className="w-full flex items-center justify-center gap-2 bg-white text-black font-semibold py-2 rounded-lg hover:bg-zinc-200 disabled:bg-zinc-800 disabled:text-zinc-500 disabled:cursor-not-allowed transition-colors">
+                        <SparklesIcon className="w-5 h-5" />
+                        {isLoading ? 'Generating...' : 'Generate'}
+                    </button>
+                )}
+            </form>
         </div>
     );
 };
