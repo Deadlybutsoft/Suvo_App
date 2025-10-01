@@ -2,7 +2,7 @@
 
 import type React from "react"
 import { useState, useCallback, useEffect } from "react"
-import { Routes, Route, useLocation, useNavigate } from "react-router-dom"
+import { Routes, Route, useNavigate } from "react-router-dom"
 import { Header } from "./components/Header"
 import { SideDrawer } from "./components/SideDrawer"
 import { ChatPanel } from "./components/ChatPanel"
@@ -16,7 +16,7 @@ import { PricingModal } from "./components/PricingModal"
 import { MainDisplayPanel } from "./components/MainDisplayPanel"
 import { IntegrationDetailModal } from "./components/IntegrationDetailModal"
 import { INTEGRATIONS, type Integration } from "./components/integrations"
-import InkeepChatButton from "./components/InkeepChatButton"
+import { AskAiPage } from "./components/AskAiPage"
 
 const initialFileSystem: FileSystem = {
   'index.html': {
@@ -362,55 +362,51 @@ const Workspace: React.FC = () => {
             onDownloadZip={handleDownloadZip} 
         />
         <main className="flex-1 flex overflow-hidden pt-16">
-          <ResizablePanel isLeftPanelHidden={isApiPanelHidden}>
-            <ChatPanel 
-              messages={messages} 
-              onSendMessage={sendMessage} 
-              aiStatus={aiStatus} 
-              stopGeneration={stopGeneration} 
-              onRestoreFileSystem={handleRestoreFileSystem} 
-              onClearChat={handleClearChat} 
-              operationMode={operationMode} 
-              onSetOperationMode={setOperationMode} 
-              openAIAPIKey={openAIAPIKey}
-              onOpenSettings={handleOpenSettings}
-            />
-            <MainDisplayPanel fileSystem={activeProject.fileSystem} activeFile={activeFile} onActiveFileChange={setActiveFile} theme={'dark'} isPanelHidden={isApiPanelHidden} togglePanel={toggleApiPanel} />
-          </ResizablePanel>
+          <Routes>
+            <Route index element={
+              <ResizablePanel isLeftPanelHidden={isApiPanelHidden}>
+                <ChatPanel 
+                  messages={messages} 
+                  onSendMessage={sendMessage} 
+                  aiStatus={aiStatus} 
+                  stopGeneration={stopGeneration} 
+                  onRestoreFileSystem={handleRestoreFileSystem} 
+                  onClearChat={handleClearChat} 
+                  operationMode={operationMode} 
+                  onSetOperationMode={setOperationMode} 
+                  openAIAPIKey={openAIAPIKey}
+                  onOpenSettings={handleOpenSettings}
+                />
+                <MainDisplayPanel fileSystem={activeProject.fileSystem} activeFile={activeFile} onActiveFileChange={setActiveFile} theme={'dark'} isPanelHidden={isApiPanelHidden} togglePanel={toggleApiPanel} />
+              </ResizablePanel>
+            } />
+            <Route path="ask-ai" element={<AskAiPage />} />
+          </Routes>
         </main>
         <SideDrawer isOpen={isDrawerOpen} onClose={toggleDrawer} onOpenSettings={handleOpenSettings} onUpgradeClick={handleUpgradeClick} projects={projects} activeProjectId={activeProjectId} onCreateNewProject={handleCreateNewProject} onDeleteProject={handleDeleteProject} onRenameProject={handleRenameProject} onSwitchProject={handleSwitchProject} />
         <PricingModal isOpen={isPricingModalOpen} onClose={() => setPricingModalOpen(false)} />
       </div>
       {isSettingsOpen && <SettingsPage onClose={() => setSettingsOpen(false)} onClearChat={handleClearChat} onUpgradeClick={handleUpgradeClick} openAIAPIKey={openAIAPIKey} onSetOpenAIAPIKey={handleSetOpenAIAPIKey} initialTab={initialSettingsTab} />}
       {selectedIntegration && <IntegrationDetailModal integration={selectedIntegration} onClose={() => setSelectedIntegration(null)} onAdd={handleAddIntegration} />}
-      <InkeepChatButton />
     </>
   )
 }
 
-const MainApplication: React.FC = () => {
+const App: React.FC = () => {
   const navigate = useNavigate();
-  const location = useLocation();
 
   const handleLaunchWorkspace = useCallback((prompt?: string, image?: File | null) => {
       initialPromptForWorkspace = prompt;
       initialImagesForWorkspace = image ? [image] : [];
-      if (!location.pathname.startsWith('/w')) {
-          navigate('/w');
-      }
-  }, [navigate, location.pathname]);
+      navigate('/w');
+  }, [navigate]);
 
-  if (location.pathname.startsWith('/w')) {
-      return <Workspace />;
-  }
-
-  return <HomePage onLaunchWorkspace={handleLaunchWorkspace} />;
+  return (
+    <Routes>
+      <Route path="/w/*" element={<Workspace />} />
+      <Route path="/*" element={<HomePage onLaunchWorkspace={handleLaunchWorkspace} />} />
+    </Routes>
+  );
 };
-
-const App: React.FC = () => (
-  <Routes>
-    <Route path="/*" element={<MainApplication />} />
-  </Routes>
-);
 
 export default App;

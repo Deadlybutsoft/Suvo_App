@@ -56,3 +56,16 @@ export type IntegrationType =
 export type OperationMode = 'gemini-2.5-flash' | 'chatgpt-5' | 'chat';
 
 export type SettingsTab = 'subscription' | 'memory' | 'api_keys';
+
+// Fix: Centralize and merge global Inkeep type definitions to resolve conflicts.
+declare global {
+  interface Window {
+    Inkeep?: {
+      ChatButton?: (config: any) => { open: () => void; cleanup: () => void };
+      EmbeddedChat?: (target: string, config: any) => { cleanup: () => void };
+    };
+    inkeep?: {
+      open: () => void;
+    }
+  }
+}

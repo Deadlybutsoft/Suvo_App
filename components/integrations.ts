@@ -2,7 +2,7 @@ import React from 'react';
 import type { IntegrationType } from '../types';
 import { 
     ConvexIcon, FirecrawlIcon, VapiIcon, BetterAuthIcon, ResendIcon, AutumnPricingIcon, 
-    OpenAIIcon, InkeepIcon, ScorecardIcon, StripeIcon 
+    OpenAIIcon, ScorecardIcon, StripeIcon 
 } from './icons';
 
 export interface Integration {
@@ -62,26 +62,5 @@ export const INTEGRATIONS: Integration[] = [
     description: 'AI research and product company providing large language, vision, and multimodal models (ChatGPT, GPT family, APIs) and developer tools.',
     docsUrl: 'https://platform.openai.com/docs',
     icon: OpenAIIcon,
-  },
-  {
-    id: 'inkeep',
-    name: 'Inkeep',
-    description: 'An AI search & agent platform that turns docs and product content into chat/agent experiences for support, docs search, and automations.',
-    docsUrl: 'https://inkeep.com/',
-    icon: InkeepIcon,
-  },
-  {
-    id: 'scorecard',
-    name: 'Scorecard',
-    description: 'An AI evaluation platform for testing and benchmarking AI systems/agents — helps teams run systematic evals, detect regressions, and measure safety/performance.',
-    docsUrl: 'https://www.scorecard.io/',
-    icon: ScorecardIcon,
-  },
-  {
-    id: 'stripe',
-    name: 'Stripe',
-    description: 'A complete payments platform for online businesses. Accept payments, manage subscriptions, and prevent fraud.',
-    docsUrl: 'https://stripe.com/docs',
-    icon: StripeIcon,
   },
 ];

@@ -1,20 +1,13 @@
 import React, { useEffect } from 'react';
 
-declare global {
-  interface Window {
-    Inkeep?: {
-      ChatButton: (config: any) => { cleanup: () => void };
-    };
-  }
-}
-
 const InkeepChatButton: React.FC = () => {
   useEffect(() => {
-    let chatButton: { cleanup: () => void } | null = null;
+    let chatButton: { open: () => void; cleanup: () => void } | null = null;
 
     // Use an interval to check for Inkeep, as the script is loaded asynchronously.
     const intervalId = setInterval(() => {
-      if (window.Inkeep) {
+      // Fix: Check for the specific ChatButton method to align with the centralized global type.
+      if (window.Inkeep?.ChatButton) {
         clearInterval(intervalId);
         
         const config = {
@@ -30,10 +23,21 @@ const InkeepChatButton: React.FC = () => {
               shape: 'circle',
             },
           },
-          label: "Help & AI Assistant",
+          chatButtonSettings: {
+            isHidden: true,
+          },
         };
 
+        // Fix: Call ChatButton which is now correctly typed globally.
         chatButton = window.Inkeep.ChatButton(config);
+        
+        if (chatButton) {
+          window.inkeep = {
+            open: () => {
+              chatButton?.open();
+            }
+          };
+        }
       }
     }, 100); // Check every 100ms
 
@@ -42,6 +46,9 @@ const InkeepChatButton: React.FC = () => {
       // Clean up the Inkeep instance when the component unmounts
       if (chatButton && typeof chatButton.cleanup === 'function') {
         chatButton.cleanup();
+      }
+      if (window.inkeep) {
+        delete (window as any).inkeep;
       }
     };
   }, []);

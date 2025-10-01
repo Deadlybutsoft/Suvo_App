@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { StopIcon, PlusIcon, CloseIcon, ArrowRightIcon, CreatorKitIcon, PhotoIcon, CheckIcon, HelpCircleIcon } from './icons/index';
+import { useNavigate } from 'react-router-dom';
+import { StopIcon, PlusIcon, CloseIcon, ArrowRightIcon, CreatorKitIcon, PhotoIcon, CheckIcon, SparklesIcon } from './icons/index';
 import { AiStatus, OperationMode } from '../types';
 import { CreatorKit } from './creator-kit/CreatorKit';
 
@@ -42,6 +43,7 @@ export const ChatInput: React.FC<ChatInputProps> = ({
   const addMenuRef = useRef<HTMLDivElement>(null);
   const kitPopoverRef = useRef<HTMLDivElement>(null);
   const kitButtonRef = useRef<HTMLButtonElement>(null);
+  const navigate = useNavigate();
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -115,7 +117,7 @@ export const ChatInput: React.FC<ChatInputProps> = ({
       setImages(prev => [...prev, ...files]);
       setImagePreviews(prev => [...prev, ...newPreviews]);
   };
-
+  
   return (
     <div className="relative bg-black border border-zinc-400 flex flex-col text-white rounded-lg">
       <div ref={kitPopoverRef}>
@@ -213,6 +215,16 @@ export const ChatInput: React.FC<ChatInputProps> = ({
                 title="Creator Kit"
             >
                 <CreatorKitIcon className="h-6 w-6" />
+            </button>
+            <button
+                onClick={() => navigate('/w/ask-ai')}
+                className="flex items-center justify-center gap-2 px-3 h-11 font-medium text-sm transition-all duration-300 text-zinc-300 hover:text-white disabled:opacity-50 rounded-md bg-zinc-900 hover:bg-zinc-800 border border-zinc-600"
+                disabled={isGenerating}
+                aria-label="Ask AI for help"
+                title="Ask AI"
+            >
+                <SparklesIcon className="h-5 w-5" />
+                <span>Ask AI</span>
             </button>
           </div>
           
