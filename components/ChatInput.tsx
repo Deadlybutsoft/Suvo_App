@@ -11,7 +11,6 @@ interface ChatInputProps {
   onSetOperationMode: (mode: OperationMode) => void;
   openAIAPIKey: string | null;
   onOpenSettings: () => void;
-  onOpenHelpModal: () => void;
 }
 
 const fileToUrl = (file: File): Promise<string> => {
@@ -30,7 +29,6 @@ export const ChatInput: React.FC<ChatInputProps> = ({
     onSetOperationMode,
     openAIAPIKey,
     onOpenSettings,
-    onOpenHelpModal,
 }) => {
   const [prompt, setPrompt] = useState('');
   const [images, setImages] = useState<File[]>([]);
@@ -215,15 +213,6 @@ export const ChatInput: React.FC<ChatInputProps> = ({
                 title="Creator Kit"
             >
                 <CreatorKitIcon className="h-6 w-6" />
-            </button>
-            <button
-                onClick={onOpenHelpModal}
-                className="w-11 h-11 flex items-center justify-center transition-all duration-300 text-zinc-300 hover:text-white disabled:opacity-50 rounded-md bg-zinc-900 hover:bg-zinc-800 border border-zinc-600"
-                disabled={isGenerating}
-                aria-label="Open Help"
-                title="Help"
-            >
-                <HelpCircleIcon className="h-6 w-6" />
             </button>
           </div>
           

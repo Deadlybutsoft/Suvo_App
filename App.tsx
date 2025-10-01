@@ -14,9 +14,9 @@ import JSZip from "jszip"
 import { SettingsPage } from "./components/SettingsPage"
 import { PricingModal } from "./components/PricingModal"
 import { MainDisplayPanel } from "./components/MainDisplayPanel"
-import { HelpModal } from "./components/HelpModal"
 import { IntegrationDetailModal } from "./components/IntegrationDetailModal"
 import { INTEGRATIONS, type Integration } from "./components/integrations"
+import InkeepChatButton from "./components/InkeepChatButton"
 
 const initialFileSystem: FileSystem = {
   'index.html': {
@@ -197,7 +197,6 @@ const Workspace: React.FC = () => {
   const [isApiPanelHidden, setApiPanelHidden] = useState(false)
   const [isSettingsOpen, setSettingsOpen] = useState(false)
   const [isPricingModalOpen, setPricingModalOpen] = useState(false)
-  const [isHelpModalOpen, setIsHelpModalOpen] = useState(false)
   const [initialSettingsTab, setInitialSettingsTab] = useState<SettingsTab>('api_keys');
   const [selectedIntegration, setSelectedIntegration] = useState<Integration | null>(null);
 
@@ -282,7 +281,6 @@ const Workspace: React.FC = () => {
   const toggleApiPanel = useCallback(() => setApiPanelHidden(p => !p), []);
   const handleUpgradeClick = useCallback(() => { setPricingModalOpen(true); setDrawerOpen(false); setSettingsOpen(false); }, []);
   const handleOpenSettings = useCallback((tab: SettingsTab = 'api_keys') => { setInitialSettingsTab(tab); setDrawerOpen(false); setSettingsOpen(true); }, []);
-  const handleOpenHelpModal = useCallback(() => setIsHelpModalOpen(true), []);
 
   const handleClearChat = useCallback(() => {
     if (confirm('Are you sure you want to clear the chat history for this project?')) {
@@ -376,17 +374,16 @@ const Workspace: React.FC = () => {
               onSetOperationMode={setOperationMode} 
               openAIAPIKey={openAIAPIKey}
               onOpenSettings={handleOpenSettings}
-              onOpenHelpModal={handleOpenHelpModal}
             />
             <MainDisplayPanel fileSystem={activeProject.fileSystem} activeFile={activeFile} onActiveFileChange={setActiveFile} theme={'dark'} isPanelHidden={isApiPanelHidden} togglePanel={toggleApiPanel} />
           </ResizablePanel>
         </main>
         <SideDrawer isOpen={isDrawerOpen} onClose={toggleDrawer} onOpenSettings={handleOpenSettings} onUpgradeClick={handleUpgradeClick} projects={projects} activeProjectId={activeProjectId} onCreateNewProject={handleCreateNewProject} onDeleteProject={handleDeleteProject} onRenameProject={handleRenameProject} onSwitchProject={handleSwitchProject} />
-        <HelpModal isOpen={isHelpModalOpen} onClose={() => setIsHelpModalOpen(false)} />
         <PricingModal isOpen={isPricingModalOpen} onClose={() => setPricingModalOpen(false)} />
       </div>
       {isSettingsOpen && <SettingsPage onClose={() => setSettingsOpen(false)} onClearChat={handleClearChat} onUpgradeClick={handleUpgradeClick} openAIAPIKey={openAIAPIKey} onSetOpenAIAPIKey={handleSetOpenAIAPIKey} initialTab={initialSettingsTab} />}
       {selectedIntegration && <IntegrationDetailModal integration={selectedIntegration} onClose={() => setSelectedIntegration(null)} onAdd={handleAddIntegration} />}
+      <InkeepChatButton />
     </>
   )
 }
