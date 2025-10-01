@@ -14,7 +14,8 @@ const examples = [
   { name: 'Inkeep.com', url: 'https://inkeep.com' },
 ];
 
-export const HomePage: React.FC<HomePageProps> = ({ onLaunchWorkspace }) => {
+// Renamed to avoid conflict with root HomePage.tsx
+export const HomePage_Component: React.FC<HomePageProps> = ({ onLaunchWorkspace }) => {
   const [isAuthOpen, setIsAuthOpen] = useState(false);
   const [mode, setMode] = useState<'clone' | 'prompt'>('clone');
   const [cloneUrl, setCloneUrl] = useState('');
