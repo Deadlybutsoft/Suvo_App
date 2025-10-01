@@ -232,14 +232,14 @@ const Workspace: React.FC = () => {
   }, [activeProject, activeFile]);
 
   const [operationMode, setOperationMode] = useState<OperationMode>('gemini-2.5-flash');
-  const [openAIAPIKey, setOpenAIAPIKey] = useState<string | null>(() => localStorage.getItem('openai_api_key'));
+  const [openAIAPIKey, setOpenAIAPIKey] = useState<string | null>(() => localStorage.getItem('OPENAI_KEY'));
 
   const handleSetOpenAIAPIKey = useCallback((key: string | null) => {
     setOpenAIAPIKey(key);
     if (key) {
-        localStorage.setItem('openai_api_key', key);
+        localStorage.setItem('OPENAI_KEY', key);
     } else {
-        localStorage.removeItem('openai_api_key');
+        localStorage.removeItem('OPENAI_KEY');
     }
   }, []);
 

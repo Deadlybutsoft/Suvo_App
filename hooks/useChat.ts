@@ -660,7 +660,7 @@ export const useChat = (
                 setMessages((prev) => prev.map((m) => m.id === aiMessageId ? { ...m, text: conversationalPart, codeChanges: streamedChanges ?? m.codeChanges, isExpectingCodeChanges } : m));
               }
             } else { // Gemini or Chat Mode or Agent Mode
-              const ai = new GoogleGenAI({ apiKey: process.env.API_KEY! })
+              const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY! })
               const chatHistory = buildGeminiHistory(messages)
               
               const promptParts: Part[] = imagesForNextTurn.map(image => ({
