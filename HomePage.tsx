@@ -126,10 +126,10 @@ export const HomePage: React.FC<HomePageProps> = ({ onLaunchWorkspace }) => {
                 DEV MODE: Launch Workspace
               </button>
               <h1 className="text-4xl sm:text-5xl md:text-6xl font-extrabold tracking-tighter text-white">
-                Build <span className="bg-yellow-400 text-black px-2 rounded-sm">Real Apps</span>. Fast as Hell.
+                Build. Design. Edit.
               </h1>
               <p className="mt-4 text-xl text-zinc-200 max-w-2xl">
-                Suvo makes ideas go live: apps, functions, <span className="text-yellow-400 font-medium">integrations</span>, no fluff.
+                Suvo lets you build, design, and edit your dream site effortlessly.
               </p>
 
               <div className="flex items-center gap-1 p-1 mt-12 mb-6 bg-black/20 border border-zinc-700 rounded-lg">

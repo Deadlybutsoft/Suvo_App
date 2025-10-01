@@ -3,7 +3,6 @@ import { SparklesIcon, CheckIcon, SpinnerIcon, SlidersIcon } from '../icons';
 import { generateImage } from '../../services/imageService';
 
 const urlToDataFile = async (base64: string, filename: string): Promise<File> => {
-    // OpenAI returns PNGs, so we handle the data URL accordingly.
     const res = await fetch(`data:image/png;base64,${base64}`);
     const blob = await res.blob();
     return new File([blob], filename, { type: 'image/png' });
@@ -15,8 +14,7 @@ interface ImageCreatorProps {
     onOpenSettings: () => void;
 }
 
-// Updated aspect ratios to be compatible with OpenAI's DALL-E 3 model.
-const aspectRatios = ['1:1', '16:9', '9:16'];
+const aspectRatios: ('1:1' | '16:9' | '9:16' | '4:3' | '3:4')[] = ['1:1', '16:9', '9:16', '4:3', '3:4'];
 const imageCounts = [1, 2, 3, 4];
 
 export const ImageCreator: React.FC<ImageCreatorProps> = ({ onSelectImages, openAIAPIKey, onOpenSettings }) => {
@@ -28,7 +26,7 @@ export const ImageCreator: React.FC<ImageCreatorProps> = ({ onSelectImages, open
     const [isOptionsOpen, setIsOptionsOpen] = useState(false);
 
     const [numberOfImages, setNumberOfImages] = useState(1);
-    const [aspectRatio, setAspectRatio] = useState('1:1');
+    const [aspectRatio, setAspectRatio] = useState<'1:1' | '16:9' | '9:16' | '4:3' | '3:4'>('1:1');
     const optionsMenuRef = useRef<HTMLDivElement>(null);
 
     useEffect(() => {
@@ -45,19 +43,13 @@ export const ImageCreator: React.FC<ImageCreatorProps> = ({ onSelectImages, open
         e.preventDefault();
         if (!prompt.trim() || isLoading) return;
 
-        if (!openAIAPIKey) {
-            alert('OpenAI API Key is required for image generation. Please add your key in the settings.');
-            onOpenSettings();
-            return;
-        }
-
         setIsLoading(true);
         setError(null);
         setGeneratedImages([]);
         setSelectedIndices([]);
 
         try {
-            const imageData = await generateImage(prompt, { numberOfImages, aspectRatio }, openAIAPIKey);
+            const imageData = await generateImage(prompt, { numberOfImages, aspectRatio });
             setGeneratedImages(imageData);
         } catch (err) {
             const errorMessage = err instanceof Error ? err.message : 'An unknown error occurred.';
@@ -185,7 +177,7 @@ export const ImageCreator: React.FC<ImageCreatorProps> = ({ onSelectImages, open
                                         <label className="text-xs font-medium text-zinc-300 mb-1.5 block px-1">Aspect ratio</label>
                                         <div className="flex bg-zinc-900 p-1 rounded-lg">
                                             {aspectRatios.map(ratio => (
-                                                <button key={ratio} type="button" onClick={() => setAspectRatio(ratio)} className={`w-1/3 py-1 text-xs rounded-md transition-colors ${aspectRatio === ratio ? 'bg-zinc-700 text-white' : 'text-zinc-300 hover:bg-zinc-800'}`}>
+                                                <button key={ratio} type="button" onClick={() => setAspectRatio(ratio)} className={`w-1/5 py-1 text-xs rounded-md transition-colors ${aspectRatio === ratio ? 'bg-zinc-700 text-white' : 'text-zinc-300 hover:bg-zinc-800'}`}>
                                                     {ratio}
                                                 </button>
                                             ))}

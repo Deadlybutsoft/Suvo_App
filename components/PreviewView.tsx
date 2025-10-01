@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import type { FileSystem } from '../types';
 import { Buffer } from 'buffer';
+import { SparklesIcon } from './icons';
 
 type Viewport = 'desktop' | 'tablet' | 'mobile';
 
@@ -9,6 +10,10 @@ interface PreviewViewProps {
   viewport: Viewport;
   refreshKey: number;
   fullscreenTrigger: number;
+  onFixRequest: (error: string) => void;
+  isSelectMode: boolean;
+  onElementSelected: (selector: string) => void;
+  onExitSelectMode: () => void;
 }
 
 const createPreviewableHtml = (
@@ -91,6 +96,8 @@ const createPreviewableHtml = (
         const errorStack = error.stack ? escapeHtml(error.stack) : '';
         const sanitizedErrorMessage = escapeHtml(errorMessage);
         const sanitizedErrorTitle = escapeHtml(errorTitle);
+        
+        window.parent.postMessage({ type: 'previewError', payload: { title: sanitizedErrorTitle, message: sanitizedErrorMessage, stack: error.stack || '' } }, '*');
 
         const styles = \`
             body { margin: 0; }
@@ -231,10 +238,94 @@ const createPreviewableHtml = (
             throw new Error("Could not find a valid entrypoint. Looked for: " + entrypoints.join(', '));
         }
         require(entrypoint, '');
+        window.parent.postMessage({ type: 'previewSuccess' }, '*');
       } catch (e) {
         console.error('Preview execution error:', e);
         displayError('Preview Error', e);
       }
+    })();
+  `;
+
+  const selectorScript = `
+    (function() {
+        let selectModeActive = false;
+        let currentHighlight = null;
+
+        function generateSelector(el) {
+          if (!(el instanceof Element)) return;
+          const path = [];
+          while (el && el.nodeType === Node.ELEMENT_NODE) {
+            let selector = el.nodeName.toLowerCase();
+            if (el.id) {
+              selector += '#' + el.id;
+              path.unshift(selector);
+              break; // ID is unique, stop
+            } else {
+              let sib = el, nth = 1;
+              while (sib = sib.previousElementSibling) {
+                if (sib.nodeName.toLowerCase() === selector) nth++;
+              }
+              if (nth != 1) selector += ":nth-of-type("+nth+")";
+            }
+            path.unshift(selector);
+            el = el.parentNode;
+          }
+          return path.join(" > ");
+        }
+
+        function enterSelectMode() {
+            if (selectModeActive) return;
+            selectModeActive = true;
+            document.body.addEventListener('mouseover', handleMouseOver);
+            document.body.addEventListener('mouseout', handleMouseOut);
+            document.body.addEventListener('click', handleClick, true); // Use capture phase
+            document.body.style.cursor = 'crosshair';
+        }
+
+        function exitSelectMode() {
+            if (!selectModeActive) return;
+            selectModeActive = false;
+            document.body.removeEventListener('mouseover', handleMouseOver);
+            document.body.removeEventListener('mouseout', handleMouseOut);
+            document.body.removeEventListener('click', handleClick, true);
+            document.body.style.cursor = 'default';
+            if (currentHighlight) {
+                currentHighlight.style.outline = '';
+                currentHighlight = null;
+            }
+        }
+
+        function handleMouseOver(e) {
+            if (currentHighlight) currentHighlight.style.outline = '';
+            currentHighlight = e.target;
+            currentHighlight.style.outline = '2px solid #3b82f6'; // Tailwind's blue-500
+        }
+
+        function handleMouseOut(e) {
+            if (e.target === currentHighlight) {
+                e.target.style.outline = '';
+                currentHighlight = null;
+            }
+        }
+
+        function handleClick(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            const selector = generateSelector(e.target);
+            if (selector) {
+                window.parent.postMessage({ type: 'element-selected', payload: selector }, '*');
+            }
+            exitSelectMode(); // Exit after one click
+            window.parent.postMessage({ type: 'exit-select-mode' }, '*');
+        }
+
+        window.addEventListener('message', (event) => {
+            if (event.data.type === 'enter-select-mode') {
+                enterSelectMode();
+            } else if (event.data.type === 'exit-select-mode') {
+                exitSelectMode();
+            }
+        });
     })();
   `;
 
@@ -246,6 +337,9 @@ const createPreviewableHtml = (
     <script>
       ${loaderScript}
     <\/script>
+    <script>
+      ${selectorScript}
+    <\/script>
   `;
   
   if (!htmlContent.includes('id="root"')) {
@@ -256,11 +350,12 @@ const createPreviewableHtml = (
 };
 
 
-export const PreviewView: React.FC<PreviewViewProps> = ({ fileSystem, viewport, refreshKey, fullscreenTrigger }) => {
+export const PreviewView: React.FC<PreviewViewProps> = ({ fileSystem, viewport, refreshKey, fullscreenTrigger, onFixRequest, isSelectMode, onElementSelected, onExitSelectMode }) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const createdUrlsRef = useRef<Set<string>>(new Set());
+  const [errorDetails, setErrorDetails] = useState<string | null>(null);
 
   useEffect(() => {
     if (fullscreenTrigger > 0 && containerRef.current) {
@@ -268,7 +363,38 @@ export const PreviewView: React.FC<PreviewViewProps> = ({ fileSystem, viewport, 
     }
   }, [fullscreenTrigger]);
 
+   useEffect(() => {
+    iframeRef.current?.contentWindow?.postMessage({ type: isSelectMode ? 'enter-select-mode' : 'exit-select-mode' }, '*');
+  }, [isSelectMode]);
+
   useEffect(() => {
+    const handleMessage = (event: MessageEvent) => {
+      if (event.source !== iframeRef.current?.contentWindow) {
+        return;
+      }
+      if (event.data?.type === 'previewError') {
+        const { title, message, stack } = event.data.payload;
+        const formattedError = `Error: ${title}\n\nMessage: ${message}\n\nStack Trace:\n${stack}`;
+        setErrorDetails(formattedError);
+      } else if (event.data?.type === 'previewSuccess') {
+        setErrorDetails(null);
+      } else if (event.data?.type === 'element-selected') {
+        onElementSelected(event.data.payload);
+      } else if (event.data?.type === 'exit-select-mode') {
+        onExitSelectMode();
+      }
+    };
+
+    window.addEventListener('message', handleMessage);
+
+    return () => {
+      window.removeEventListener('message', handleMessage);
+    };
+  }, [onElementSelected, onExitSelectMode]);
+
+  useEffect(() => {
+    setErrorDetails(null); // Clear errors on refresh
+    
     // Clean up old URLs before creating new ones
     createdUrlsRef.current.forEach(url => URL.revokeObjectURL(url));
     createdUrlsRef.current.clear();
@@ -295,7 +421,7 @@ export const PreviewView: React.FC<PreviewViewProps> = ({ fileSystem, viewport, 
   };
 
   return (
-    <div className="h-full w-full bg-slate-100 dark:bg-black flex flex-col">
+    <div className="relative h-full w-full bg-slate-100 dark:bg-black flex flex-col">
         <div className="flex-1 flex items-center justify-center overflow-auto p-2">
             <div
                 ref={containerRef}
@@ -311,6 +437,17 @@ export const PreviewView: React.FC<PreviewViewProps> = ({ fileSystem, viewport, 
                 />
             </div>
         </div>
+        {errorDetails && (
+            <div className="absolute bottom-4 right-4 z-10">
+                <button
+                    onClick={() => onFixRequest(errorDetails)}
+                    className="flex items-center gap-2 px-4 py-2 text-sm font-semibold bg-red-600 text-white rounded-lg shadow-lg hover:bg-red-700 transition-transform transform hover:scale-105"
+                >
+                    <SparklesIcon className="w-5 h-5" />
+                    <span>Fix Now</span>
+                </button>
+            </div>
+        )}
     </div>
   );
 };

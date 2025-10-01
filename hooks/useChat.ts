@@ -42,7 +42,7 @@ project-root/
     *   **React & TypeScript**: The main entry point is \`src/main.tsx\`. The root component is \`src/App.tsx\`. All imports from external packages in \`.tsx\` files **MUST use standard bare module specifiers**, e.g., \`import React from 'react';\`. Dependencies are managed in \`package.json\`.
     *   **Preview Environment & Dependencies**: The live preview environment can automatically resolve the following external libraries: \`react\`, \`react-dom\`, and \`react-router-dom\`. For any other external libraries (e.g., charting libraries, utility libraries), the live preview may fail. Stick to these supported libraries for maximum compatibility.
     *   **Tailwind CSS**: All styling must be done with Tailwind CSS. A \`src/styles/globals.css\` should be set up for base styles and imported into \`src/main.tsx\`. The \`tailwind.config.js\` and \`postcss.config.js\` files must be configured correctly.
-    *   **File Organization**: Strictly follow the structure outlined in the "Core Mandate". Place components, pages, hooks, etc., in their designated directories.
+    *   **File Organization**: Strictly follow the structure outlined in the "Core Mandate".
 
 2.  **Proactive Design & Aesthetics**: This is your most important directive. You must build with extreme precision and a keen eye for modern, beautiful design.
     *   **Choose a Design Language**: For every project, you MUST choose ONE of the following 15 professional design languages. Your choice should be based on the user's request to create a stunning and appropriate design. You must consistently apply the principles of the chosen language throughout the entire application. Announce which language you've chosen in your conversational response.
@@ -64,15 +64,20 @@ project-root/
     *   **Build Complete Components**: Infer user intent and build what they *mean*, not just what they say. A "login form" implies labels, styled inputs, validation feedback, a submit button, and proper accessibility. Always build complete, aesthetically pleasing components.
     *   **Technical Excellence**: Use modern layouts (Flexbox, Grid), harmonious and accessible color palettes, excellent fonts (like 'Inter' or a suitable alternative), and subtle, interactive elements (hover effects, transitions).
 
-3.  **Accessibility First**: All generated code must be accessible. Use semantic HTML in your components, provide \`alt\` text for images, associate labels with form controls, and use ARIA attributes when necessary.
+3.  **Research & Implementation with Firecrawl**:
+    *   When you need to implement a specific API, library, or follow a design system from a documentation website, you are capable of using Firecrawl to scrape the relevant documentation.
+    *   Use the scraped content to inform your implementation, ensuring accuracy and adherence to the source material.
+    *   When a task requires external knowledge (e.g., "integrate with the Resend API"), you should state that you will use your Firecrawl capability to research the latest documentation to ensure the implementation is correct and up-to-date. This gives the user confidence in your process.
 
-4.  **Clean Code**:
+4.  **Accessibility First**: All generated code must be accessible. Use semantic HTML in your components, provide \`alt\` text for images, associate labels with form controls, and use ARIA attributes when necessary.
+
+5.  **Clean Code**:
     *   **HTML**: Write a minimal, clean HTML5 shell in \`index.html\`. It should include a root element (\`<div id="root"></div>\`) and a module script tag to load \`/src/main.tsx\`.
     *   **TypeScript/React**: Write clean, modern React code with TypeScript. Use functional components and hooks.
     *   **Configuration**: Always create the necessary config files (\`vite.config.ts\`, \`tsconfig.json\`, \`tailwind.config.js\`, \`postcss.config.js\`, \`package.json\`).
     *   **Quote Handling**: Pay close attention to quotes in generated code. In JSX, if a string attribute contains an apostrophe (e.g., "What's on your mind?"), you **MUST** enclose the attribute value in double quotes (\`placeholder="What's on your mind?"\`). Using single quotes in this case (\`placeholder='What's on your mind?'\`) will cause a syntax error. Always produce syntactically correct code.
 
-5.  **Image Handling**:
+6.  **Image Handling**:
     *   **User Image Upload Workflow**:
         1.  Acknowledge image receipt.
         2.  Create the image file in the \`public/\` directory (e.g., \`public/user-upload.png\`) using a \`CREATE\` operation.
@@ -448,6 +453,8 @@ export const useChat = (
   operationMode: OperationMode,
   openAIAPIKey: string | null,
   onOpenSettings: () => void,
+  selectedSelectors: string[],
+  setSelectedSelectors: React.Dispatch<React.SetStateAction<string[]>>
 ) => {
   const [aiStatus, setAiStatus] = useState<AiStatus>("idle")
   const stopGenerationRef = useRef(false)
@@ -500,6 +507,13 @@ export const useChat = (
 
   const sendMessage = useCallback(
     async (initialPrompt: string, images: File[]) => {
+      let finalPrompt = initialPrompt;
+      if (selectedSelectors.length > 0) {
+          const selectorsString = selectedSelectors.map(s => `\`${s}\``).join(', ');
+          finalPrompt = `For the element(s) with CSS selector(s): ${selectorsString}, please do the following: ${initialPrompt}`;
+          setSelectedSelectors([]); // Clear after using them in the prompt
+      }
+
       const isChatMode = operationMode === 'chat';
       const modelToUse = isChatMode ? 'gemini-2.5-flash' : operationMode;
 
@@ -511,7 +525,7 @@ export const useChat = (
       stopGenerationRef.current = false
       setAiStatus("thinking")
 
-      const userMessage: Message = { id: Date.now().toString(), role: "user", text: initialPrompt }
+      const userMessage: Message = { id: Date.now().toString(), role: "user", text: finalPrompt }
       
       let imagesForNextTurn: { data: string; mimeType: string }[] = [];
       if (images.length > 0 && !isChatMode) {
@@ -557,13 +571,13 @@ export const useChat = (
         }
       })].join('\n');
 
-      const textPromptContent = initialPrompt + fileContext;
+      const textPromptContent = finalPrompt + fileContext;
       const systemInstruction = isChatMode ? AI_CHAT_MODE_SYSTEM_PROMPT : AI_SYSTEM_PROMPT;
       let fullResponseText = ""
 
       try {
         if (modelToUse === 'chatgpt-5') {
-          const openai = new OpenAI({ apiKey: openAIAPIKey, dangerouslyAllowBrowser: true });
+          const openai = new OpenAI({ apiKey: openAIAPIKey!, dangerouslyAllowBrowser: true });
           const history = buildOpenAIHistory(messages, systemInstruction);
           const userPromptContent: (OpenAI.Chat.Completions.ChatCompletionContentPartText | OpenAI.Chat.Completions.ChatCompletionContentPartImage)[] = [{ type: 'text', text: textPromptContent }];
           
@@ -586,7 +600,7 @@ export const useChat = (
             setMessages((prev) => prev.map((m) => m.id === aiMessageId ? { ...m, text: conversationalPart, codeChanges: streamedChanges ?? m.codeChanges, isExpectingCodeChanges } : m));
           }
         } else { // Gemini or Chat Mode (which uses Gemini)
-          const ai = new GoogleGenAI({ apiKey: process.env.API_KEY })
+          const ai = new GoogleGenAI({ apiKey: process.env.API_KEY! })
           const chatHistory = buildGeminiHistory(messages)
           
           const promptParts: Part[] = imagesForNextTurn.map(image => ({
@@ -659,7 +673,7 @@ export const useChat = (
       }
       setAiStatus("idle")
     },
-    [fileSystem, setFileSystem, messages, setMessages, clearLastUploadedImage, operationMode, openAIAPIKey, onOpenSettings],
+    [fileSystem, setFileSystem, messages, setMessages, clearLastUploadedImage, operationMode, openAIAPIKey, onOpenSettings, selectedSelectors, setSelectedSelectors],
   )
 
   return { messages, setMessages, sendMessage, aiStatus, stopGeneration }

@@ -205,6 +205,9 @@ const Workspace: React.FC = () => {
   const [activeFile, setActiveFile] = useState<string>('src/App.tsx');
   const activeProject = projects.find(p => p.id === activeProjectId) ?? projects[0];
 
+  const [isSelectMode, setIsSelectMode] = useState(false);
+  const [selectedSelectors, setSelectedSelectors] = useState<string[]>([]);
+
   useEffect(() => {
     // This effect ensures that the active file is always valid.
     // It runs when the project changes or its file system is updated.
@@ -262,6 +265,8 @@ const Workspace: React.FC = () => {
     operationMode,
     openAIAPIKey,
     () => setSettingsOpen(true),
+    selectedSelectors,
+    setSelectedSelectors,
   );
   
   useEffect(() => {
@@ -325,9 +330,27 @@ const Workspace: React.FC = () => {
     setProjects(prev => prev.map(p => p.id === id ? { ...p, name: newName } : p));
   }, []);
 
-  const handleRestoreFileSystem = useCallback((fs: FileSystem) => {
+  const handleRestoreFileSystem = useCallback((fs: FileSystem, messageId: string) => {
     setActiveProjectFileSystem(fs);
-    setActiveProjectMessages(prev => [...prev, { id: Date.now().toString(), role: 'ai', text: 'I have restored the project to the selected checkpoint.' }]);
+    setActiveProjectMessages(prev => {
+        const messageIndex = prev.findIndex(m => m.id === messageId);
+        if (messageIndex === -1) {
+            // Fallback if message not found, though this shouldn't happen
+            return [...prev, { id: Date.now().toString(), role: 'ai', text: 'I have restored the project to the selected checkpoint.' }];
+        }
+        
+        // Truncate messages up to and including the one we're restoring
+        const truncatedMessages = prev.slice(0, messageIndex + 1);
+
+        return [
+            ...truncatedMessages, 
+            { 
+                id: Date.now().toString(), 
+                role: 'ai', 
+                text: 'I have restored the project to this checkpoint and removed subsequent changes from our conversation.' 
+            }
+        ];
+    });
   }, [activeProjectId]);
 
   const handleDownloadZip = useCallback(async () => {
@@ -351,6 +374,11 @@ const Workspace: React.FC = () => {
       setSelectedIntegration(null);
   }, [sendMessage]);
   
+  const handleFixRequest = useCallback((error: string) => {
+    const prompt = `The application preview is showing an error. Please analyze the following error details and fix the code.\n\n--- ERROR DETAILS ---\n${error}`;
+    sendMessage(prompt, []);
+  }, [sendMessage]);
+
   return (
     <>
       <div className="relative h-screen w-screen bg-slate-50 dark:bg-zinc-950 text-slate-900 dark:text-white flex flex-col overflow-hidden">
@@ -376,11 +404,30 @@ const Workspace: React.FC = () => {
                   onSetOperationMode={setOperationMode} 
                   openAIAPIKey={openAIAPIKey}
                   onOpenSettings={handleOpenSettings}
+                  isSelectMode={isSelectMode}
+                  onToggleSelectMode={() => setIsSelectMode(p => !p)}
+                  selectedSelectors={selectedSelectors}
+                  onRemoveSelector={(selector) => setSelectedSelectors(p => p.filter(s => s !== selector))}
                 />
-                <MainDisplayPanel fileSystem={activeProject.fileSystem} activeFile={activeFile} onActiveFileChange={setActiveFile} theme={'dark'} isPanelHidden={isApiPanelHidden} togglePanel={toggleApiPanel} />
+                <MainDisplayPanel 
+                  fileSystem={activeProject.fileSystem} 
+                  activeFile={activeFile} 
+                  onActiveFileChange={setActiveFile} 
+                  theme={'dark'} 
+                  isPanelHidden={isApiPanelHidden} 
+                  togglePanel={toggleApiPanel} 
+                  onFixRequest={handleFixRequest}
+                  isSelectMode={isSelectMode}
+                  onElementSelected={(selector) => {
+                    if (!selectedSelectors.includes(selector)) {
+                      setSelectedSelectors(p => [...p, selector]);
+                    }
+                  }}
+                  onExitSelectMode={() => setIsSelectMode(false)}
+                />
               </ResizablePanel>
             } />
-            <Route path="ask-ai" element={<AskAiPage />} />
+            <Route path="ask-ai" element={<AskAiPage key={Math.random()} />} />
           </Routes>
         </main>
         <SideDrawer isOpen={isDrawerOpen} onClose={toggleDrawer} onOpenSettings={handleOpenSettings} onUpgradeClick={handleUpgradeClick} projects={projects} activeProjectId={activeProjectId} onCreateNewProject={handleCreateNewProject} onDeleteProject={handleDeleteProject} onRenameProject={handleRenameProject} onSwitchProject={handleSwitchProject} />

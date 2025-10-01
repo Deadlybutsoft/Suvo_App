@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { StopIcon, PlusIcon, CloseIcon, ArrowRightIcon, CreatorKitIcon, PhotoIcon, CheckIcon, SparklesIcon } from './icons/index';
+import { StopIcon, PlusIcon, CloseIcon, ArrowRightIcon, CreatorKitIcon, PhotoIcon, CheckIcon, SparklesIcon, HelpCircleIcon, CursorArrowIcon } from './icons/index';
 import { AiStatus, OperationMode } from '../types';
 import { CreatorKit } from './creator-kit/CreatorKit';
 
@@ -12,6 +12,10 @@ interface ChatInputProps {
   onSetOperationMode: (mode: OperationMode) => void;
   openAIAPIKey: string | null;
   onOpenSettings: () => void;
+  isSelectMode: boolean;
+  onToggleSelectMode: () => void;
+  selectedSelectors: string[];
+  onRemoveSelector: (selector: string) => void;
 }
 
 const fileToUrl = (file: File): Promise<string> => {
@@ -30,6 +34,10 @@ export const ChatInput: React.FC<ChatInputProps> = ({
     onSetOperationMode,
     openAIAPIKey,
     onOpenSettings,
+    isSelectMode,
+    onToggleSelectMode,
+    selectedSelectors,
+    onRemoveSelector,
 }) => {
   const [prompt, setPrompt] = useState('');
   const [images, setImages] = useState<File[]>([]);
@@ -140,6 +148,22 @@ export const ChatInput: React.FC<ChatInputProps> = ({
         multiple
       />
       
+      {selectedSelectors.length > 0 && (
+        <div className="p-3 border-b border-zinc-700">
+            <div className="flex flex-wrap gap-2 items-center">
+                <span className="text-xs font-medium text-zinc-400 flex-shrink-0">Selected:</span>
+                {selectedSelectors.map((selector, index) => (
+                    <div key={index} className="flex items-center gap-1.5 bg-zinc-800 text-zinc-200 text-xs font-mono rounded-full px-2 py-1 max-w-full">
+                        <span className="truncate" title={selector}>{selector}</span>
+                        <button onClick={() => onRemoveSelector(selector)} className="flex-shrink-0 p-0.5 rounded-full hover:bg-zinc-700 transition-colors" aria-label={`Remove selector: ${selector}`}>
+                            <CloseIcon className="w-3 h-3"/>
+                        </button>
+                    </div>
+                ))}
+            </div>
+        </div>
+      )}
+
       {imagePreviews.length > 0 && (
         <div className="p-3 border-b border-zinc-700">
             <div className="flex flex-wrap gap-3">
@@ -171,7 +195,7 @@ export const ChatInput: React.FC<ChatInputProps> = ({
           onChange={(e) => setPrompt(e.target.value)}
           onKeyDown={handleKeyDown}
           placeholder="Describe what you want to build or change..."
-          className="w-full bg-transparent resize-none focus:outline-none text-xl text-white placeholder:text-zinc-500 max-h-48 scrollbar-thin scrollbar-thumb-zinc-600 scrollbar-track-transparent chat-input"
+          className="w-full bg-transparent resize-none focus:outline-none text-xl text-white placeholder:text-zinc-500 max-h-48 scrollbar-thin scrollbar-thumb-zinc-600 scrollbar-track-transparent chat-input break-words"
           rows={1}
           disabled={isGenerating}
         />
@@ -217,14 +241,23 @@ export const ChatInput: React.FC<ChatInputProps> = ({
                 <CreatorKitIcon className="h-6 w-6" />
             </button>
             <button
+                onClick={onToggleSelectMode}
+                className={`w-11 h-11 flex items-center justify-center transition-all duration-300 disabled:opacity-50 rounded-md ${isSelectMode ? 'bg-zinc-700 text-white' : 'bg-zinc-900 text-zinc-300 hover:text-white hover:bg-zinc-800 border border-zinc-600'}`}
+                disabled={isGenerating}
+                aria-label="Select element from preview"
+                title="Select element"
+            >
+                <CursorArrowIcon className="h-5 w-5" />
+            </button>
+            <button
                 onClick={() => navigate('/w/ask-ai')}
                 className="flex items-center justify-center gap-2 px-3 h-11 font-medium text-sm transition-all duration-300 text-zinc-300 hover:text-white disabled:opacity-50 rounded-md bg-zinc-900 hover:bg-zinc-800 border border-zinc-600"
                 disabled={isGenerating}
-                aria-label="Ask AI for help"
-                title="Ask AI"
+                aria-label="Get help"
+                title="Help"
             >
-                <SparklesIcon className="h-5 w-5" />
-                <span>Ask AI</span>
+                <HelpCircleIcon className="h-5 w-5" />
+                <span>Help</span>
             </button>
           </div>
           

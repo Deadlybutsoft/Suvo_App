@@ -13,6 +13,10 @@ interface MainDisplayPanelProps {
     theme: AppTheme;
     isPanelHidden: boolean;
     togglePanel: () => void;
+    onFixRequest: (error: string) => void;
+    isSelectMode: boolean;
+    onElementSelected: (selector: string) => void;
+    onExitSelectMode: () => void;
 }
 
 const ViewportButton: React.FC<{
@@ -44,6 +48,10 @@ export const MainDisplayPanel: React.FC<MainDisplayPanelProps> = ({
     theme,
     isPanelHidden,
     togglePanel,
+    onFixRequest,
+    isSelectMode,
+    onElementSelected,
+    onExitSelectMode,
 }) => {
     const [activeTab, setActiveTab] = useState<'preview' | 'code'>('preview');
     const [viewport, setViewport] = useState<Viewport>('desktop');
@@ -138,6 +146,10 @@ export const MainDisplayPanel: React.FC<MainDisplayPanelProps> = ({
                         viewport={viewport} 
                         refreshKey={refreshKey}
                         fullscreenTrigger={fullscreenTrigger}
+                        onFixRequest={onFixRequest}
+                        isSelectMode={isSelectMode}
+                        onElementSelected={onElementSelected}
+                        onExitSelectMode={onExitSelectMode}
                     />
                 )}
             </div>

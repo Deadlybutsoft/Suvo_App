@@ -9,12 +9,16 @@ interface ChatPanelProps {
   onSendMessage: (prompt: string, images: File[]) => void;
   aiStatus: AiStatus;
   stopGeneration: () => void;
-  onRestoreFileSystem: (fs: FileSystem) => void;
+  onRestoreFileSystem: (fs: FileSystem, messageId: string) => void;
   onClearChat: () => boolean;
   operationMode: OperationMode;
   onSetOperationMode: (mode: OperationMode) => void;
   openAIAPIKey: string | null;
   onOpenSettings: () => void;
+  isSelectMode: boolean;
+  onToggleSelectMode: () => void;
+  selectedSelectors: string[];
+  onRemoveSelector: (selector: string) => void;
 }
 
 export const ChatPanel: React.FC<ChatPanelProps> = ({ 
@@ -28,6 +32,10 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
     onSetOperationMode,
     openAIAPIKey,
     onOpenSettings,
+    isSelectMode,
+    onToggleSelectMode,
+    selectedSelectors,
+    onRemoveSelector,
 }) => {
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
@@ -68,6 +76,10 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
             onSetOperationMode={onSetOperationMode}
             openAIAPIKey={openAIAPIKey}
             onOpenSettings={onOpenSettings}
+            isSelectMode={isSelectMode}
+            onToggleSelectMode={onToggleSelectMode}
+            selectedSelectors={selectedSelectors}
+            onRemoveSelector={onRemoveSelector}
         />
       </div>
     </div>

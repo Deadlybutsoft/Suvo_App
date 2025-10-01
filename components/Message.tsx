@@ -182,14 +182,14 @@ const UserMessage: React.FC<{ message: MessageType }> = ({ message }) => {
     );
 };
 
-const AiMessage: React.FC<{ message: MessageType, onRestoreFileSystem: (fs: FileSystem) => void; }> = ({ message, onRestoreFileSystem }) => {
+const AiMessage: React.FC<{ message: MessageType, onRestoreFileSystem: (fs: FileSystem, messageId: string) => void; }> = ({ message, onRestoreFileSystem }) => {
     if (message.isStreaming && !message.text && (!message.codeChanges || message.codeChanges.length === 0) && !message.isExpectingCodeChanges) {
         return <ThinkingIndicator />;
     }
 
     const handleRestore = () => {
         if (message.previousFileSystem && window.confirm('Are you sure you want to undo to this checkpoint? All changes made after this version will be lost.')) {
-            onRestoreFileSystem(message.previousFileSystem);
+            onRestoreFileSystem(message.previousFileSystem, message.id);
         }
     };
 
@@ -231,7 +231,7 @@ const AiMessage: React.FC<{ message: MessageType, onRestoreFileSystem: (fs: File
 };
 
 
-export const Message: React.FC<{ message: MessageType; onRestoreFileSystem: (fs: FileSystem) => void; }> = ({ message, onRestoreFileSystem }) => {
+export const Message: React.FC<{ message: MessageType; onRestoreFileSystem: (fs: FileSystem, messageId: string) => void; }> = ({ message, onRestoreFileSystem }) => {
   const isUser = message.role === 'user';
   
   return (
