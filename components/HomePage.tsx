@@ -96,6 +96,11 @@ export const HomePage: React.FC<HomePageProps> = ({ onLaunchWorkspace }) => {
       executeClone(url);
   };
 
+  const handleTryDemo = () => {
+    setIsAuthOpen(false);
+    onLaunchWorkspace();
+  };
+
 
   return (
     <div 
@@ -126,10 +131,10 @@ export const HomePage: React.FC<HomePageProps> = ({ onLaunchWorkspace }) => {
                 DEV MODE: Launch Workspace
               </button>
               <h1 className="text-5xl sm:text-6xl md:text-7xl font-extrabold tracking-tighter text-white">
-                Build. Design. Edit.
+                Your Vision, Instantly Real.
               </h1>
               <p className="mt-4 text-xl text-zinc-200 max-w-2xl">
-                Suvo lets you build, design, and edit your dream site effortlessly.
+                From prompt to production-ready apps, Suvo is the fastest way to build for the web.
               </p>
 
               <div className="flex items-center gap-1 p-1 mt-12 mb-6 bg-black/20 border border-zinc-700 rounded-lg">
@@ -157,9 +162,15 @@ export const HomePage: React.FC<HomePageProps> = ({ onLaunchWorkspace }) => {
                         stopGeneration={() => {}}
                         operationMode={'gemini-2.5-flash'}
                         onSetOperationMode={() => {}}
-                        // Fix: Pass null for `openAIAPIKey` and a no-op for `onOpenSettings` as these props are not used on the home page.
                         openAIAPIKey={null}
                         onOpenSettings={() => {}}
+                        isSelectMode={false}
+                        onToggleSelectMode={() => {}}
+                        selectedSelectors={[]}
+                        onRemoveSelector={() => {}}
+                        onTakeSnapshot={() => {}}
+                        imageToAttach={null}
+                        onImageAttached={() => {}}
                     />
                 ) : (
                     <>
@@ -203,7 +214,7 @@ export const HomePage: React.FC<HomePageProps> = ({ onLaunchWorkspace }) => {
             </main>
         </div>
         
-        {isAuthOpen && <AuthPage onClose={() => setIsAuthOpen(false)} />}
+        {isAuthOpen && <AuthPage onClose={() => setIsAuthOpen(false)} onTryDemo={handleTryDemo} />}
     </div>
   );
 };

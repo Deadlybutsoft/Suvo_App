@@ -1,31 +1,25 @@
 import React, { useState, useEffect } from 'react';
-import { CloseIcon, SpinnerIcon } from './icons';
+import { CloseIcon, GoogleIcon, CursorArrowIcon } from './icons';
 
 interface AuthPageProps {
   onClose: () => void;
+  onTryDemo: () => void;
 }
 
-const AuthInput: React.FC<{ id: string, type: string, placeholder: string, value: string, onChange: (e: React.ChangeEvent<HTMLInputElement>) => void, disabled: boolean }> = ({ id, type, placeholder, value, onChange, disabled }) => (
-  <input
-    id={id}
-    name={id}
-    type={type}
-    required
-    value={value}
-    onChange={onChange}
-    disabled={disabled}
-    placeholder={placeholder}
-    autoComplete="email"
-    className="w-full p-3 bg-black border border-zinc-600 rounded-md text-white placeholder-zinc-500 focus:ring-1 focus:ring-white outline-none transition disabled:opacity-50"
-  />
+const SocialButton: React.FC<{ onClick: () => void; icon: React.FC<{className?: string}>; children: React.ReactNode; disabled?: boolean }> = ({ onClick, icon: Icon, children, disabled }) => (
+    <button
+        onClick={onClick}
+        disabled={disabled}
+        className="w-full flex items-center justify-center gap-3 p-3 font-semibold text-white bg-zinc-900 border border-zinc-700 rounded-md hover:bg-zinc-800 transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
+    >
+        <Icon className="w-5 h-5" />
+        <span>{children}</span>
+    </button>
 );
 
-export const AuthPage: React.FC<AuthPageProps> = ({ onClose }) => {
+
+export const AuthPage: React.FC<AuthPageProps> = ({ onClose, onTryDemo }) => {
   const [isVisible, setIsVisible] = useState(false);
-  const [email, setEmail] = useState('');
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [message, setMessage] = useState<string | null>(null);
 
   useEffect(() => {
     setIsVisible(true);
@@ -36,16 +30,8 @@ export const AuthPage: React.FC<AuthPageProps> = ({ onClose }) => {
     setTimeout(onClose, 300);
   };
   
-  const handleAuthAction = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setLoading(true);
-    setError(null);
-    setMessage(null);
-    
-    // Supabase logic removed
-    setError("Authentication is currently disabled.");
-    
-    setLoading(false);
+  const handleGoogleLogin = () => {
+    alert("Google Login is coming soon!");
   };
 
   return (
@@ -56,36 +42,40 @@ export const AuthPage: React.FC<AuthPageProps> = ({ onClose }) => {
       onClick={handleClose}
     >
       <div
-        className={`relative w-full max-w-md bg-black border border-zinc-700 text-slate-800 dark:text-zinc-200 shadow-2xl overflow-hidden rounded-lg transition-all duration-300 ${isVisible ? 'scale-100 opacity-100' : 'scale-95 opacity-0'}`}
+        className={`relative w-full max-w-sm bg-black border border-zinc-700 text-slate-800 dark:text-zinc-200 shadow-2xl overflow-hidden rounded-lg transition-all duration-300 ${isVisible ? 'scale-100 opacity-100' : 'scale-95 opacity-0'}`}
         onClick={(e) => e.stopPropagation()}
       >
-        <button onClick={handleClose} disabled={loading} className="absolute top-4 right-4 p-1.5 text-slate-400 dark:text-zinc-500 rounded-full hover:bg-slate-100 dark:hover:bg-zinc-800 z-20 disabled:opacity-50">
+        <button onClick={handleClose} className="absolute top-4 right-4 p-1.5 text-slate-400 dark:text-zinc-500 rounded-full hover:bg-slate-100 dark:hover:bg-zinc-800 z-20">
           <CloseIcon className="w-5 h-5" />
         </button>
 
         <div className="p-10 flex flex-col justify-center">
             <div className="w-full max-w-sm mx-auto text-center">
                 <h2 className="text-3xl font-bold text-slate-900 dark:text-white mb-2">Welcome to Suvo</h2>
-                <p className="text-slate-500 dark:text-zinc-400 mb-8">Enter your email to log in or sign up.</p>
+                <p className="text-slate-500 dark:text-zinc-400 mb-8">Sign in to continue or try the demo.</p>
 
-                {error && (
-                    <div className="bg-red-900/50 border border-red-500/50 text-red-300 px-4 py-3 relative mb-6 text-sm text-left rounded-md" role="alert">
-                        <span className="block sm:inline">{error}</span>
-                    </div>
-                )}
-                {message && (
-                     <div className="bg-green-900/50 border border-green-500/50 text-green-300 px-4 py-3 relative mb-6 text-sm text-left rounded-md" role="alert">
-                        <span className="block sm:inline">{message}</span>
-                    </div>
-                )}
-                
-                <form onSubmit={handleAuthAction} className="space-y-4">
-                    <AuthInput id="email" type="email" placeholder="Email" value={email} onChange={e => setEmail(e.target.value)} disabled={loading || !!message} />
+                <div className="space-y-4">
+                    <SocialButton onClick={handleGoogleLogin} icon={GoogleIcon}>
+                        Sign in with Google
+                    </SocialButton>
 
-                    <button type="submit" disabled={loading || !!message} className="w-full p-3 font-semibold text-black bg-white rounded-md hover:bg-zinc-200 transition-colors flex items-center justify-center disabled:opacity-60">
-                        {loading ? <SpinnerIcon className="w-6 h-6 text-black" /> : "Continue with Email"}
+                    <div className="relative my-6">
+                        <div className="absolute inset-0 flex items-center" aria-hidden="true">
+                            <div className="w-full border-t border-zinc-700" />
+                        </div>
+                        <div className="relative flex justify-center text-sm">
+                            <span className="bg-black px-2 text-zinc-500">OR</span>
+                        </div>
+                    </div>
+
+                    <button
+                        onClick={onTryDemo}
+                        className="w-full flex items-center justify-center gap-3 p-3 font-semibold text-black bg-white rounded-md hover:bg-zinc-200 transition-colors"
+                    >
+                        <CursorArrowIcon className="w-5 h-5" />
+                        <span>Try Demo</span>
                     </button>
-                </form>
+                </div>
             </div>
         </div>
       </div>

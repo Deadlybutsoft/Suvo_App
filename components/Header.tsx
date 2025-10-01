@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { MenuIcon, DownloadIcon, IntegrationsIcon } from './icons/index';
+import { MenuIcon, DownloadIcon, IntegrationsIcon, HelpCircleIcon } from './icons/index';
 import type { IntegrationType } from '../types';
 import { INTEGRATIONS } from './integrations';
 
@@ -103,6 +103,14 @@ export const Header: React.FC<HeaderProps> = ({
                 </div>
             )}
         </div>
+
+        <Link
+            to="/w/ask-ai"
+            title="Help"
+            className="flex items-center gap-2 px-3 py-2 text-sm font-medium bg-black text-zinc-300 hover:text-white border border-zinc-600 hover:border-zinc-500 transition-colors rounded-md"
+        >
+            <HelpCircleIcon className="h-5 w-5 text-zinc-400" />
+        </Link>
         
         <button
           onClick={onUpgradeClick}

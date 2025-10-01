@@ -1,6 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { StopIcon, PlusIcon, CloseIcon, ArrowRightIcon, CreatorKitIcon, PhotoIcon, CheckIcon, SparklesIcon, HelpCircleIcon, CursorArrowIcon } from './icons/index';
+import { StopIcon, PlusIcon, CloseIcon, ArrowRightIcon, CreatorKitIcon, PhotoIcon, CheckIcon, CpuChipIcon, CursorArrowIcon, CameraIcon } from './icons/index';
 import { AiStatus, OperationMode } from '../types';
 import { CreatorKit } from './creator-kit/CreatorKit';
 
@@ -16,6 +15,9 @@ interface ChatInputProps {
   onToggleSelectMode: () => void;
   selectedSelectors: string[];
   onRemoveSelector: (selector: string) => void;
+  onTakeSnapshot: () => void;
+  imageToAttach: File | null;
+  onImageAttached: () => void;
 }
 
 const fileToUrl = (file: File): Promise<string> => {
@@ -38,6 +40,9 @@ export const ChatInput: React.FC<ChatInputProps> = ({
     onToggleSelectMode,
     selectedSelectors,
     onRemoveSelector,
+    onTakeSnapshot,
+    imageToAttach,
+    onImageAttached,
 }) => {
   const [prompt, setPrompt] = useState('');
   const [images, setImages] = useState<File[]>([]);
@@ -51,7 +56,18 @@ export const ChatInput: React.FC<ChatInputProps> = ({
   const addMenuRef = useRef<HTMLDivElement>(null);
   const kitPopoverRef = useRef<HTMLDivElement>(null);
   const kitButtonRef = useRef<HTMLButtonElement>(null);
-  const navigate = useNavigate();
+
+  useEffect(() => {
+    if (imageToAttach) {
+      const handleAttach = async () => {
+        const newPreview = await fileToUrl(imageToAttach);
+        setImages(prev => [...prev, imageToAttach]);
+        setImagePreviews(prev => [...prev, newPreview]);
+        onImageAttached();
+      };
+      handleAttach();
+    }
+  }, [imageToAttach, onImageAttached]);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -126,6 +142,8 @@ export const ChatInput: React.FC<ChatInputProps> = ({
       setImagePreviews(prev => [...prev, ...newPreviews]);
   };
   
+  const isAgentMode = operationMode === 'agent';
+
   return (
     <div className="relative bg-black border border-zinc-400 flex flex-col text-white rounded-lg">
       <div ref={kitPopoverRef}>
@@ -179,10 +197,15 @@ export const ChatInput: React.FC<ChatInputProps> = ({
         </div>
       )}
       
-      {operationMode === 'chat' && (
+      {(operationMode === 'chat' || isAgentMode) && (
         <div className="bg-zinc-900 border-b border-zinc-700 p-2 flex items-center justify-between">
-          <p className="text-sm font-semibold text-zinc-300 px-2">Chat Mode</p>
-          <button onClick={() => onSetOperationMode('gemini-2.5-flash')} className="p-1 text-zinc-400 hover:text-white hover:bg-zinc-800 rounded-md transition-colors" aria-label="Exit Chat Mode" title="Exit Chat Mode">
+            <div className="flex items-center gap-2 px-2">
+                {isAgentMode && <CpuChipIcon className="w-4 h-4 text-yellow-400"/>}
+                <p className="text-sm font-semibold text-zinc-300">
+                    {isAgentMode ? 'Agent Mode' : 'Chat Mode'}
+                </p>
+            </div>
+          <button onClick={() => onSetOperationMode('gemini-2.5-flash')} className="p-1 text-zinc-400 hover:text-white hover:bg-zinc-800 rounded-md transition-colors" aria-label="Exit Mode" title="Exit Mode">
             <CloseIcon className="w-4 h-4" />
           </button>
         </div>
@@ -194,7 +217,7 @@ export const ChatInput: React.FC<ChatInputProps> = ({
           value={prompt}
           onChange={(e) => setPrompt(e.target.value)}
           onKeyDown={handleKeyDown}
-          placeholder="Describe what you want to build or change..."
+          placeholder={isAgentMode ? "Describe the application you want the agent to build..." : "Describe what you want to build or change..."}
           className="w-full bg-transparent resize-none focus:outline-none text-xl text-white placeholder:text-zinc-500 max-h-48 scrollbar-thin scrollbar-thumb-zinc-600 scrollbar-track-transparent chat-input break-words"
           rows={1}
           disabled={isGenerating}
@@ -208,6 +231,10 @@ export const ChatInput: React.FC<ChatInputProps> = ({
               {isAddMenuOpen && (
                 <div className="absolute bottom-full left-0 mb-2 w-56 bg-zinc-950 border border-zinc-800 shadow-2xl z-10 p-1.5 rounded-lg">
                   <div className="space-y-1">
+                    <button onClick={() => { onTakeSnapshot(); setAddMenuOpen(false); }} className="w-full flex items-center gap-3 px-2 py-1.5 text-sm text-left text-zinc-200 hover:bg-zinc-800 transition-colors rounded-md">
+                      <CameraIcon className="w-4 h-4 text-zinc-400"/>
+                      <span>Snapshot Preview</span>
+                    </button>
                     <button onClick={() => { fileInputRef.current?.click(); setAddMenuOpen(false); }} className="w-full flex items-center gap-3 px-2 py-1.5 text-sm text-left text-zinc-200 hover:bg-zinc-800 transition-colors rounded-md">
                       <PhotoIcon className="w-4 h-4 text-zinc-400"/> 
                       <span>Attach Image</span>
@@ -220,6 +247,10 @@ export const ChatInput: React.FC<ChatInputProps> = ({
                     <button onClick={() => { onSetOperationMode('chatgpt-5'); setAddMenuOpen(false); }} className={`w-full flex items-center justify-between px-2 py-1.5 text-sm text-left rounded-md transition-colors ${operationMode === 'chatgpt-5' ? 'bg-zinc-700 text-white' : 'text-zinc-300 hover:bg-zinc-800'}`}>
                       <span>ChatGPT 5</span>
                       {operationMode === 'chatgpt-5' && <CheckIcon className="w-4 h-4" />}
+                    </button>
+                     <button onClick={() => { onSetOperationMode('agent'); setAddMenuOpen(false); }} className={`w-full flex items-center justify-between px-2 py-1.5 text-sm text-left rounded-md transition-colors ${operationMode === 'agent' ? 'bg-zinc-700 text-white' : 'text-zinc-300 hover:bg-zinc-800'}`}>
+                      <span>Agent Mode</span>
+                      {operationMode === 'agent' && <CheckIcon className="w-4 h-4" />}
                     </button>
                     <div className="!my-1 border-t border-zinc-800"></div>
                      <button onClick={() => { onSetOperationMode('chat'); setAddMenuOpen(false); }} className={`w-full flex items-center justify-between px-2 py-1.5 text-sm text-left rounded-md transition-colors ${operationMode === 'chat' ? 'bg-zinc-700 text-white' : 'text-zinc-300 hover:bg-zinc-800'}`}>
@@ -242,7 +273,7 @@ export const ChatInput: React.FC<ChatInputProps> = ({
             </button>
             <button
                 onClick={onToggleSelectMode}
-                className={`w-11 h-11 flex items-center justify-center transition-all duration-300 disabled:opacity-50 rounded-md ${isSelectMode ? 'bg-zinc-700 text-white' : 'bg-zinc-900 text-zinc-300 hover:text-white hover:bg-zinc-800 border border-zinc-600'}`}
+                className={`w-11 h-11 flex items-center justify-center transition-all duration-300 disabled:opacity-50 rounded-md ${isSelectMode ? 'bg-yellow-400 text-black' : 'bg-zinc-900 text-zinc-300 hover:text-white hover:bg-zinc-800 border border-zinc-600'}`}
                 disabled={isGenerating}
                 aria-label="Select element from preview"
                 title="Select element"
@@ -250,14 +281,13 @@ export const ChatInput: React.FC<ChatInputProps> = ({
                 <CursorArrowIcon className="h-5 w-5" />
             </button>
             <button
-                onClick={() => navigate('/w/ask-ai')}
-                className="flex items-center justify-center gap-2 px-3 h-11 font-medium text-sm transition-all duration-300 text-zinc-300 hover:text-white disabled:opacity-50 rounded-md bg-zinc-900 hover:bg-zinc-800 border border-zinc-600"
+                onClick={() => onSetOperationMode('agent')}
+                className={`w-11 h-11 flex items-center justify-center transition-all duration-300 disabled:opacity-50 rounded-md ${isAgentMode ? 'bg-zinc-700 text-yellow-300' : 'bg-zinc-900 text-zinc-300 hover:text-white hover:bg-zinc-800 border border-zinc-600'}`}
                 disabled={isGenerating}
-                aria-label="Get help"
-                title="Help"
+                aria-label="Toggle Agent Mode"
+                title="Agent Mode"
             >
-                <HelpCircleIcon className="h-5 w-5" />
-                <span>Help</span>
+                <CpuChipIcon className="h-6 w-6" />
             </button>
           </div>
           

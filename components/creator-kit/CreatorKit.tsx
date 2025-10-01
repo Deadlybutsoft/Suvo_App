@@ -3,7 +3,6 @@ import { ColorPicker } from './ColorPicker';
 import { IconPicker } from './IconPicker';
 import { FontPicker } from './FontPicker';
 import { ImageCreator } from './ImageCreator';
-import { ImagePicker } from './ImagePicker';
 import { SlidersIcon, IntegrationsIcon, PhotoIcon, FontIcon, ArrowLeftIcon, CloseIcon, ChevronRightIcon } from '../icons';
 
 interface CreatorKitProps {

@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
-import { ChatInput } from './ChatInput';
+import { ChatInput } from './components/ChatInput';
 import { Link } from 'react-router-dom';
-import { AuthPage } from './AuthPage';
-import { SparklesIcon, LinkIcon, ArrowRightIcon, SpinnerIcon } from './icons';
+import { AuthPage } from './components/AuthPage';
+import { SparklesIcon, LinkIcon, ArrowRightIcon, SpinnerIcon } from './components/icons';
 
 interface HomePageProps {
   onLaunchWorkspace: (prompt?: string, image?: File | null) => void;
@@ -26,6 +26,11 @@ export const HomePage: React.FC<HomePageProps> = ({ onLaunchWorkspace }) => {
     const image = images.length > 0 ? images[0] : null;
     const isInputProvided = prompt.trim() !== '' || image !== null;
     onLaunchWorkspace(isInputProvided ? prompt : undefined, image);
+  };
+  
+  const handleTryDemo = () => {
+    setIsAuthOpen(false);
+    onLaunchWorkspace();
   };
 
   const executeClone = async (urlToClone: string) => {
@@ -159,6 +164,13 @@ export const HomePage: React.FC<HomePageProps> = ({ onLaunchWorkspace }) => {
                         onSetOperationMode={() => {}}
                         openAIAPIKey={null}
                         onOpenSettings={() => {}}
+                        isSelectMode={false}
+                        onToggleSelectMode={() => {}}
+                        selectedSelectors={[]}
+                        onRemoveSelector={() => {}}
+                        onTakeSnapshot={() => {}}
+                        imageToAttach={null}
+                        onImageAttached={() => {}}
                     />
                 ) : (
                     <>
@@ -202,7 +214,7 @@ export const HomePage: React.FC<HomePageProps> = ({ onLaunchWorkspace }) => {
             </main>
         </div>
         
-        {isAuthOpen && <AuthPage onClose={() => setIsAuthOpen(false)} />}
+        {isAuthOpen && <AuthPage onClose={() => setIsAuthOpen(false)} onTryDemo={handleTryDemo} />}
     </div>
   );
 };

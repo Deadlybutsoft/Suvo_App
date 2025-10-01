@@ -192,6 +192,12 @@ const defaultProject: Project = {
 let initialPromptForWorkspace: string | undefined = undefined;
 let initialImagesForWorkspace: File[] = [];
 
+async function dataURLtoFile(dataurl: string, filename: string): Promise<File> {
+    const res = await fetch(dataurl);
+    const blob = await res.blob();
+    return new File([blob], filename, { type: 'image/png' });
+}
+
 const Workspace: React.FC = () => {
   const [isDrawerOpen, setDrawerOpen] = useState(false)
   const [isApiPanelHidden, setApiPanelHidden] = useState(false)
@@ -207,6 +213,10 @@ const Workspace: React.FC = () => {
 
   const [isSelectMode, setIsSelectMode] = useState(false);
   const [selectedSelectors, setSelectedSelectors] = useState<string[]>([]);
+  
+  const [screenshotTrigger, setScreenshotTrigger] = useState(0);
+  const [imageToAttach, setImageToAttach] = useState<File | null>(null);
+  const [isAgentRunning, setIsAgentRunning] = useState(false);
 
   useEffect(() => {
     // This effect ensures that the active file is always valid.
@@ -257,6 +267,13 @@ const Workspace: React.FC = () => {
     );
   };
 
+  const handleAgentStepComplete = useCallback(() => {
+      // Use a short timeout to allow the preview to re-render with the latest code changes
+      setTimeout(() => {
+          setScreenshotTrigger(p => p + 1);
+      }, 1000);
+  }, []);
+
   const { messages, sendMessage, aiStatus, stopGeneration, setMessages } = useChat(
     activeProject.messages,
     setActiveProjectMessages,
@@ -267,6 +284,9 @@ const Workspace: React.FC = () => {
     () => setSettingsOpen(true),
     selectedSelectors,
     setSelectedSelectors,
+    isAgentRunning,
+    setIsAgentRunning,
+    handleAgentStepComplete,
   );
   
   useEffect(() => {
@@ -379,6 +399,32 @@ const Workspace: React.FC = () => {
     sendMessage(prompt, []);
   }, [sendMessage]);
 
+  const handleTakeSnapshot = useCallback(() => {
+    setScreenshotTrigger(p => p + 1);
+  }, []);
+
+  const handleScreenshotTaken = useCallback(async (dataUrl: string) => {
+    try {
+      const file = await dataURLtoFile(dataUrl, `snapshot-${Date.now()}.png`);
+      if (isAgentRunning) {
+        // If agent is running, send the screenshot directly to the agent
+        sendMessage(
+            "Here is a screenshot of the result of your last action. Please analyze it for correctness against your plan, then proceed to the next step or make corrections if needed.",
+            [file]
+        );
+      } else {
+        // Otherwise, attach it for the user to send
+        setImageToAttach(file);
+      }
+    } catch (error) {
+        console.error("Failed to convert snapshot to file:", error);
+    }
+  }, [isAgentRunning, sendMessage]);
+
+  const handleImageAttached = useCallback(() => {
+    setImageToAttach(null);
+  }, []);
+
   return (
     <>
       <div className="relative h-screen w-screen bg-slate-50 dark:bg-zinc-950 text-slate-900 dark:text-white flex flex-col overflow-hidden">
@@ -408,6 +454,9 @@ const Workspace: React.FC = () => {
                   onToggleSelectMode={() => setIsSelectMode(p => !p)}
                   selectedSelectors={selectedSelectors}
                   onRemoveSelector={(selector) => setSelectedSelectors(p => p.filter(s => s !== selector))}
+                  onTakeSnapshot={handleTakeSnapshot}
+                  imageToAttach={imageToAttach}
+                  onImageAttached={handleImageAttached}
                 />
                 <MainDisplayPanel 
                   fileSystem={activeProject.fileSystem} 
@@ -424,6 +473,8 @@ const Workspace: React.FC = () => {
                     }
                   }}
                   onExitSelectMode={() => setIsSelectMode(false)}
+                  screenshotTrigger={screenshotTrigger}
+                  onScreenshotTaken={handleScreenshotTaken}
                 />
               </ResizablePanel>
             } />

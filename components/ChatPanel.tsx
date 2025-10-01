@@ -19,6 +19,9 @@ interface ChatPanelProps {
   onToggleSelectMode: () => void;
   selectedSelectors: string[];
   onRemoveSelector: (selector: string) => void;
+  onTakeSnapshot: () => void;
+  imageToAttach: File | null;
+  onImageAttached: () => void;
 }
 
 export const ChatPanel: React.FC<ChatPanelProps> = ({ 
@@ -36,6 +39,9 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
     onToggleSelectMode,
     selectedSelectors,
     onRemoveSelector,
+    onTakeSnapshot,
+    imageToAttach,
+    onImageAttached,
 }) => {
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
@@ -80,6 +86,9 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
             onToggleSelectMode={onToggleSelectMode}
             selectedSelectors={selectedSelectors}
             onRemoveSelector={onRemoveSelector}
+            onTakeSnapshot={onTakeSnapshot}
+            imageToAttach={imageToAttach}
+            onImageAttached={onImageAttached}
         />
       </div>
     </div>

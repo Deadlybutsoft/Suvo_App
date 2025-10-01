@@ -53,7 +53,7 @@ export type IntegrationType =
     | 'scorecard'
     | 'stripe';
 
-export type OperationMode = 'gemini-2.5-flash' | 'chatgpt-5' | 'chat';
+export type OperationMode = 'gemini-2.5-flash' | 'chatgpt-5' | 'chat' | 'agent';
 
 export type SettingsTab = 'subscription' | 'memory' | 'api_keys';
 

@@ -6,14 +6,15 @@ import remarkGfm from 'remark-gfm';
 
 const CALMING_MESSAGES = [
     "Analyzing your request...",
-    "Drafting a plan...",
-    "Consulting my digital muse...",
-    "Building the scaffolding...",
-    "Just a moment, laying the foundation.",
-    "Warming up the circuits...",
-    "Thinking...",
-    "Reviewing the existing code...",
+    "Drafting an execution plan...",
+    "Consulting architectural blueprints...",
+    "Deconstructing the problem...",
+    "Initializing cognitive matrix...",
+    "Mapping out component structure...",
+    "Reviewing existing file system...",
     "Formulating a strategy...",
+    "Preparing the digital canvas...",
+    "Sequencing development tasks...",
 ];
 
 const ThinkingIndicator: React.FC = () => {
@@ -114,11 +115,13 @@ const CodeVersionBlock: React.FC<{
 };
 
 const CODE_GENERATION_MESSAGES = [
-    "Generating code changes...",
     "Writing new files...",
-    "Reviewing the edits...",
-    "Preparing the next version...",
-    "Finalizing the code block...",
+    "Refactoring existing code...",
+    "Applying component logic...",
+    "Integrating dependencies...",
+    "Finalizing code block...",
+    "Structuring new components...",
+    "Updating configuration files...",
 ];
 
 const CodeVersionBlockSkeleton: React.FC = () => {

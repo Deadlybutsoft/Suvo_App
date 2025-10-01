@@ -17,6 +17,8 @@ interface MainDisplayPanelProps {
     isSelectMode: boolean;
     onElementSelected: (selector: string) => void;
     onExitSelectMode: () => void;
+    screenshotTrigger: number;
+    onScreenshotTaken: (dataUrl: string) => void;
 }
 
 const ViewportButton: React.FC<{
@@ -52,6 +54,8 @@ export const MainDisplayPanel: React.FC<MainDisplayPanelProps> = ({
     isSelectMode,
     onElementSelected,
     onExitSelectMode,
+    screenshotTrigger,
+    onScreenshotTaken,
 }) => {
     const [activeTab, setActiveTab] = useState<'preview' | 'code'>('preview');
     const [viewport, setViewport] = useState<Viewport>('desktop');
@@ -150,6 +154,8 @@ export const MainDisplayPanel: React.FC<MainDisplayPanelProps> = ({
                         isSelectMode={isSelectMode}
                         onElementSelected={onElementSelected}
                         onExitSelectMode={onExitSelectMode}
+                        screenshotTrigger={screenshotTrigger}
+                        onScreenshotTaken={onScreenshotTaken}
                     />
                 )}
             </div>

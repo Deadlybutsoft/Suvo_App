@@ -14,6 +14,8 @@ interface PreviewViewProps {
   isSelectMode: boolean;
   onElementSelected: (selector: string) => void;
   onExitSelectMode: () => void;
+  screenshotTrigger: number;
+  onScreenshotTaken: (dataUrl: string) => void;
 }
 
 const createPreviewableHtml = (
@@ -291,19 +293,25 @@ const createPreviewableHtml = (
             document.body.style.cursor = 'default';
             if (currentHighlight) {
                 currentHighlight.style.outline = '';
+                currentHighlight.style.outlineOffset = '';
                 currentHighlight = null;
             }
         }
 
         function handleMouseOver(e) {
-            if (currentHighlight) currentHighlight.style.outline = '';
+            if (currentHighlight) {
+                currentHighlight.style.outline = '';
+                currentHighlight.style.outlineOffset = '';
+            }
             currentHighlight = e.target;
-            currentHighlight.style.outline = '2px solid #3b82f6'; // Tailwind's blue-500
+            currentHighlight.style.outline = '2px dashed #fbbf24'; // amber-400
+            currentHighlight.style.outlineOffset = '2px';
         }
 
         function handleMouseOut(e) {
             if (e.target === currentHighlight) {
                 e.target.style.outline = '';
+                e.target.style.outlineOffset = '';
                 currentHighlight = null;
             }
         }
@@ -329,6 +337,64 @@ const createPreviewableHtml = (
     })();
   `;
 
+  const snapshotScript = `
+    (function() {
+        let isHtml2CanvasLoading = false;
+        let isHtml2CanvasLoaded = false;
+        let html2canvas = null;
+
+        function loadHtml2Canvas() {
+            if (isHtml2CanvasLoaded || isHtml2CanvasLoading) return;
+            isHtml2CanvasLoading = true;
+            const script = document.createElement('script');
+            script.src = 'https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js';
+            script.onload = () => {
+                isHtml2CanvasLoaded = true;
+                isHtml2CanvasLoading = false;
+                html2canvas = window.html2canvas;
+            };
+            script.onerror = () => {
+                console.error('Failed to load html2canvas');
+                isHtml2CanvasLoading = false;
+                window.parent.postMessage({ type: 'screenshot-error', payload: 'Failed to load screenshot library.' }, '*');
+            };
+            document.head.appendChild(script);
+        }
+
+        async function takeScreenshot() {
+            if (!html2canvas) {
+                console.warn('html2canvas not loaded yet, please wait.');
+                return;
+            }
+            try {
+                const canvas = await html2canvas(document.body, { useCORS: true, allowTaint: true, backgroundColor: '#000000' });
+                const dataUrl = canvas.toDataURL('image/png');
+                window.parent.postMessage({ type: 'screenshot-taken', payload: dataUrl }, '*');
+            } catch (e) {
+                console.error('Error taking screenshot:', e);
+                window.parent.postMessage({ type: 'screenshot-error', payload: e.message }, '*');
+            }
+        }
+        
+        window.addEventListener('message', (event) => {
+            if (event.data.type === 'take-screenshot') {
+                if (!isHtml2CanvasLoaded) {
+                    const interval = setInterval(() => {
+                        if (isHtml2CanvasLoaded) {
+                            clearInterval(interval);
+                            takeScreenshot();
+                        }
+                    }, 100);
+                } else {
+                    takeScreenshot();
+                }
+            }
+        });
+        
+        loadHtml2Canvas();
+    })();
+  `;
+
   const scriptToInject = `
     <script src="https://unpkg.com/react@18/umd/react.development.js" crossorigin><\/script>
     <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js" crossorigin><\/script>
@@ -340,6 +406,9 @@ const createPreviewableHtml = (
     <script>
       ${selectorScript}
     <\/script>
+    <script>
+      ${snapshotScript}
+    <\/script>
   `;
   
   if (!htmlContent.includes('id="root"')) {
@@ -350,7 +419,7 @@ const createPreviewableHtml = (
 };
 
 
-export const PreviewView: React.FC<PreviewViewProps> = ({ fileSystem, viewport, refreshKey, fullscreenTrigger, onFixRequest, isSelectMode, onElementSelected, onExitSelectMode }) => {
+export const PreviewView: React.FC<PreviewViewProps> = ({ fileSystem, viewport, refreshKey, fullscreenTrigger, onFixRequest, isSelectMode, onElementSelected, onExitSelectMode, screenshotTrigger, onScreenshotTaken }) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
@@ -362,6 +431,12 @@ export const PreviewView: React.FC<PreviewViewProps> = ({ fileSystem, viewport, 
         containerRef.current.requestFullscreen().catch(err => console.error("Fullscreen error:", err));
     }
   }, [fullscreenTrigger]);
+
+  useEffect(() => {
+    if (screenshotTrigger > 0) {
+        iframeRef.current?.contentWindow?.postMessage({ type: 'take-screenshot' }, '*');
+    }
+  }, [screenshotTrigger]);
 
    useEffect(() => {
     iframeRef.current?.contentWindow?.postMessage({ type: isSelectMode ? 'enter-select-mode' : 'exit-select-mode' }, '*');
@@ -382,6 +457,11 @@ export const PreviewView: React.FC<PreviewViewProps> = ({ fileSystem, viewport, 
         onElementSelected(event.data.payload);
       } else if (event.data?.type === 'exit-select-mode') {
         onExitSelectMode();
+      } else if (event.data?.type === 'screenshot-taken') {
+        onScreenshotTaken(event.data.payload);
+      } else if (event.data?.type === 'screenshot-error') {
+        console.error('Screenshot failed in iframe:', event.data.payload);
+        alert(`Could not take screenshot: ${event.data.payload}`);
       }
     };
 
@@ -390,7 +470,7 @@ export const PreviewView: React.FC<PreviewViewProps> = ({ fileSystem, viewport, 
     return () => {
       window.removeEventListener('message', handleMessage);
     };
-  }, [onElementSelected, onExitSelectMode]);
+  }, [onElementSelected, onExitSelectMode, onScreenshotTaken]);
 
   useEffect(() => {
     setErrorDetails(null); // Clear errors on refresh

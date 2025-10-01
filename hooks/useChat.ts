@@ -69,15 +69,21 @@ project-root/
     *   Use the scraped content to inform your implementation, ensuring accuracy and adherence to the source material.
     *   When a task requires external knowledge (e.g., "integrate with the Resend API"), you should state that you will use your Firecrawl capability to research the latest documentation to ensure the implementation is correct and up-to-date. This gives the user confidence in your process.
 
-4.  **Accessibility First**: All generated code must be accessible. Use semantic HTML in your components, provide \`alt\` text for images, associate labels with form controls, and use ARIA attributes when necessary.
+4.  **Visual Cloning & Design Inspiration using Firecrawl**:
+    *   If a user asks to "clone [website]", "copy the design of [website]", or "make it look like [website's] hero section", you must interpret this as a visual reference task.
+    *   Your first step is to announce that you will use your Firecrawl capability to take a screenshot of the specified URL. For example, say: "Okay, I will use Firecrawl to get a screenshot of [website] to use as a visual reference."
+    *   After this announcement, you must immediately proceed to generate the code that replicates the visual design. The system will handle the actual screenshot process based on your stated intent and provide it to you as context for your code generation.
+    *   You can apply this to entire pages or specific sections (e.g., "the pricing table from stripe.com"). When a user provides a pre-existing image and asks for changes, you should be able to analyze the image and apply the requested changes to the code.
 
-5.  **Clean Code**:
+5.  **Accessibility First**: All generated code must be accessible. Use semantic HTML in your components, provide \`alt\` text for images, associate labels with form controls, and use ARIA attributes when necessary.
+
+6.  **Clean Code**:
     *   **HTML**: Write a minimal, clean HTML5 shell in \`index.html\`. It should include a root element (\`<div id="root"></div>\`) and a module script tag to load \`/src/main.tsx\`.
     *   **TypeScript/React**: Write clean, modern React code with TypeScript. Use functional components and hooks.
     *   **Configuration**: Always create the necessary config files (\`vite.config.ts\`, \`tsconfig.json\`, \`tailwind.config.js\`, \`postcss.config.js\`, \`package.json\`).
     *   **Quote Handling**: Pay close attention to quotes in generated code. In JSX, if a string attribute contains an apostrophe (e.g., "What's on your mind?"), you **MUST** enclose the attribute value in double quotes (\`placeholder="What's on your mind?"\`). Using single quotes in this case (\`placeholder='What's on your mind?'\`) will cause a syntax error. Always produce syntactically correct code.
 
-6.  **Image Handling**:
+7.  **Image Handling**:
     *   **User Image Upload Workflow**:
         1.  Acknowledge image receipt.
         2.  Create the image file in the \`public/\` directory (e.g., \`public/user-upload.png\`) using a \`CREATE\` operation.
@@ -189,6 +195,30 @@ const AI_CHAT_MODE_SYSTEM_PROMPT = `You are "Suvo," an AI expert specializing in
 Your role is to be a helpful conversational partner. Discuss design principles, implementation strategies, modern web development practices, and answer any questions the user has about their project.
 **IMPORTANT:** In this mode, you MUST NOT write or edit any code. Your responses should be purely conversational text. Do not provide code snippets, and absolutely DO NOT use the [CODE_CHANGES] block format. Your goal is to guide and inform, not to code.`
 
+const AI_AGENT_MODE_SYSTEM_PROMPT = `You are "Suvo," an expert AI agent developer. Your goal is to build and modify web applications based on user requests. You operate in a step-by-step, iterative loop.
+
+### AGENT WORKFLOW:
+
+1.  **Analyze & Plan**: When you receive a task, first analyze the request and the current file system. Create a detailed, step-by-step plan to achieve the user's goal. Announce this plan in your conversational response.
+2.  **Execute Step 1**: Implement **ONLY the first step** of your plan. This may involve creating, updating, or deleting one or more files. Generate the code changes in the required JSON format.
+3.  **Halt for Feedback**: After providing the code for the current step, you **MUST** end your entire response with the special token: \`[EXECUTION_HALTED_FOR_SCREENSHOT_ANALYSIS]\`. This signals that you have completed a step and are now waiting for visual feedback.
+4.  **Receive & Analyze Screenshot**: The system will automatically apply your code changes, take a screenshot of the web preview, and send it back to you with the instruction to continue. Your next task is to **critically analyze this screenshot**.
+    *   Does the UI match what you intended to build in the previous step?
+    *   Are there any visual bugs, layout issues, or styling errors?
+    *   Does it align with your overall plan?
+5.  **Correct or Continue**:
+    *   **If corrections are needed**: Announce what you're fixing, then generate the necessary code changes to fix the issue. Then, halt again using the token \`[EXECUTION_HALTED_FOR_SCREENSHOT_ANALYSIS]\`.
+    *   **If the step was successful**: Announce that the previous step was successful and that you are now proceeding to the **next step** of your original plan. Execute that next step, generate the code, and halt again using the token.
+6.  **Repeat**: Continue this cycle of executing a step, halting, analyzing the screenshot, and correcting or continuing until your entire plan is complete.
+7.  **Completion**: Once all steps are finished and you've verified the final result, state that the task is complete. **DO NOT** use the halt token in your final message.
+
+**CRITICAL INSTRUCTIONS**:
+*   **One Step at a Time**: Never execute more than one step of your plan at once.
+*   **Always Halt**: You must use the \`[EXECUTION_HALTED_FOR_SCREENSHOT_ANALYSIS]\` token at the end of every response except the final one. Failure to do so will break your execution loop.
+*   **Follow Core Directives**: You must still follow all rules from your primary system prompt regarding file structure, design languages, code quality, and response format.
+*   **Be Autonomous**: Take initiative. If a user's request is vague, make reasonable, expert assumptions to create a complete, functional, and beautiful result. If you see a problem in the screenshot, fix it proactively.
+`
+
 const convertImageToBase64 = (imageFile: File): Promise<{ data: string; mimeType: string }> => {
   return new Promise((resolve, reject) => {
     const reader = new FileReader()
@@ -236,26 +266,30 @@ const isQuotaError = (error: any): boolean => {
 const getFriendlyErrorMessage = (error: any, context: 'api' | 'parsing'): string => {
     if (context === 'parsing') {
         console.error("Parsing error details:", error);
-        return "I had a little trouble formatting the code changes. Please review the code, as it might be incomplete. If something looks wrong, you can ask me to try again.";
+        return "I had trouble formatting the code changes. The code might be incomplete. Please review it, and if something is wrong, ask me to try again.";
     }
 
     if (isQuotaError(error)) {
-        return "It looks like you've reached your usage limit for the AI model. Please check your plan and billing details.";
+        return "You've reached your usage limit for the AI model. Please check your plan and billing details.";
+    }
+    
+    if (error instanceof Error && error.name === 'AbortError') {
+        return "The request timed out. There might be a network issue or a problem with the AI service. Please try again later.";
     }
 
     const errorString = (error instanceof Error ? error.message : String(error)).toLowerCase();
 
     if (errorString.includes('api key') || errorString.includes('401')) {
-        return "The API key seems to be invalid or missing. Please check your settings and make sure you have a valid key for the selected model.";
+        return "The API key is invalid or missing. Please check your settings and provide a valid key for the selected model.";
     }
 
     if (errorString.includes('failed to fetch') || errorString.includes('network')) {
-        return "I couldn't connect to the AI service. Please check your internet connection and try again.";
+        return "Connection to the AI service failed. Please check your internet connection and try again.";
     }
     
     // Default fallback
     console.error("Unhandled API error:", error);
-    return "Something went wrong on my end. I've logged the issue. Please try your request again in a moment.";
+    return "An unexpected error occurred with the AI service. Please check your connection and try again.";
 };
 
 const applyCodeChanges = (
@@ -454,15 +488,21 @@ export const useChat = (
   openAIAPIKey: string | null,
   onOpenSettings: () => void,
   selectedSelectors: string[],
-  setSelectedSelectors: React.Dispatch<React.SetStateAction<string[]>>
+  setSelectedSelectors: React.Dispatch<React.SetStateAction<string[]>>,
+  isAgentRunning: boolean,
+  setIsAgentRunning: React.Dispatch<React.SetStateAction<boolean>>,
+  onAgentStepComplete: () => void,
 ) => {
   const [aiStatus, setAiStatus] = useState<AiStatus>("idle")
-  const stopGenerationRef = useRef(false)
+  const abortControllerRef = useRef<AbortController | null>(null)
   const lastUploadedImageRef = useRef<{ data: string; mimeType: string } | null>(null)
 
   const stopGeneration = useCallback(() => {
-    stopGenerationRef.current = true
-  }, [])
+    if (abortControllerRef.current) {
+        abortControllerRef.current.abort()
+    }
+    setIsAgentRunning(false);
+  }, [setIsAgentRunning])
 
   const clearLastUploadedImage = useCallback(() => {
     lastUploadedImageRef.current = null
@@ -507,6 +547,9 @@ export const useChat = (
 
   const sendMessage = useCallback(
     async (initialPrompt: string, images: File[]) => {
+      abortControllerRef.current = new AbortController();
+      const signal = abortControllerRef.current.signal;
+
       let finalPrompt = initialPrompt;
       if (selectedSelectors.length > 0) {
           const selectorsString = selectedSelectors.map(s => `\`${s}\``).join(', ');
@@ -515,14 +558,29 @@ export const useChat = (
       }
 
       const isChatMode = operationMode === 'chat';
-      const modelToUse = isChatMode ? 'gemini-2.5-flash' : operationMode;
+      const isAgentMode = operationMode === 'agent';
+      const currentIsAgentRunning = isAgentRunning || isAgentMode;
+
+      // Determine model and system prompt
+      let modelToUse = operationMode;
+      let systemInstruction = AI_SYSTEM_PROMPT;
+      if (isChatMode) {
+          modelToUse = 'gemini-2.5-flash';
+          systemInstruction = AI_CHAT_MODE_SYSTEM_PROMPT;
+      } else if (currentIsAgentRunning) {
+          modelToUse = 'gemini-2.5-flash'; // Agent mode uses Gemini for now
+          systemInstruction = AI_AGENT_MODE_SYSTEM_PROMPT;
+      }
 
       if (modelToUse === 'chatgpt-5' && !openAIAPIKey) {
         onOpenSettings();
         return;
       }
+      
+      if (isAgentMode && !isAgentRunning) {
+        setIsAgentRunning(true);
+      }
 
-      stopGenerationRef.current = false
       setAiStatus("thinking")
 
       const userMessage: Message = { id: Date.now().toString(), role: "user", text: finalPrompt }
@@ -557,7 +615,7 @@ export const useChat = (
       setMessages((prev) => [...prev, userMessage]);
       
       const aiMessageId = (Date.now() + 2).toString()
-      const fileSystemSnapshot = isChatMode ? null : JSON.parse(JSON.stringify(fileSystem));
+      const fileSystemSnapshot = (isChatMode || currentIsAgentRunning) ? null : JSON.parse(JSON.stringify(fileSystem));
       const aiMessagePlaceholder: Message = { id: aiMessageId, role: "ai", text: "", isStreaming: true }
       setMessages((prev) => [...prev, aiMessagePlaceholder])
       setAiStatus("streaming")
@@ -572,59 +630,67 @@ export const useChat = (
       })].join('\n');
 
       const textPromptContent = finalPrompt + fileContext;
-      const systemInstruction = isChatMode ? AI_CHAT_MODE_SYSTEM_PROMPT : AI_SYSTEM_PROMPT;
+      
       let fullResponseText = ""
+      const timeoutPromise = new Promise((_, reject) => setTimeout(() => reject(new Error('AbortError')), 60000));
 
       try {
-        if (modelToUse === 'chatgpt-5') {
-          const openai = new OpenAI({ apiKey: openAIAPIKey!, dangerouslyAllowBrowser: true });
-          const history = buildOpenAIHistory(messages, systemInstruction);
-          const userPromptContent: (OpenAI.Chat.Completions.ChatCompletionContentPartText | OpenAI.Chat.Completions.ChatCompletionContentPartImage)[] = [{ type: 'text', text: textPromptContent }];
-          
-          imagesForNextTurn.forEach(image => {
-            userPromptContent.push({
-              type: 'image_url',
-              image_url: { url: `data:${image.mimeType};base64,${image.data}` }
-            });
-          });
-          
-          history.push({ role: 'user', content: userPromptContent });
-          const stream = await openai.chat.completions.create({ model: 'gpt-4o', messages: history, stream: true });
-          
-          for await (const chunk of stream) {
-            if (stopGenerationRef.current) break;
-            fullResponseText += chunk.choices[0]?.delta?.content || '';
-            const conversationalPart = fullResponseText.split("[CODE_CHANGES]")[0];
-            const isExpectingCodeChanges = fullResponseText.includes("[CODE_CHANGES]");
-            const streamedChanges = parseStreamedCodeChanges(fullResponseText);
-            setMessages((prev) => prev.map((m) => m.id === aiMessageId ? { ...m, text: conversationalPart, codeChanges: streamedChanges ?? m.codeChanges, isExpectingCodeChanges } : m));
-          }
-        } else { // Gemini or Chat Mode (which uses Gemini)
-          const ai = new GoogleGenAI({ apiKey: process.env.API_KEY! })
-          const chatHistory = buildGeminiHistory(messages)
-          
-          const promptParts: Part[] = imagesForNextTurn.map(image => ({
-            inlineData: { mimeType: image.mimeType, data: image.data }
-          }));
-          promptParts.unshift({ text: textPromptContent });
-
-          const chat = ai.chats.create({ model: 'gemini-2.5-flash', config: { systemInstruction }, history: chatHistory });
-          const stream = await chat.sendMessageStream({ message: promptParts });
-          
-          for await (const chunk of stream) {
-            if (stopGenerationRef.current) break
-            fullResponseText += chunk.text
-            if (isChatMode) {
-                setMessages((prev) => prev.map((m) => m.id === aiMessageId ? { ...m, text: fullResponseText } : m));
-            } else {
-                const conversationalPart = fullResponseText.split("[CODE_CHANGES]")[0]
+        const streamPromise = (async () => {
+            if (modelToUse === 'chatgpt-5') {
+              const openai = new OpenAI({ apiKey: openAIAPIKey!, dangerouslyAllowBrowser: true });
+              const history = buildOpenAIHistory(messages, systemInstruction);
+              const userPromptContent: (OpenAI.Chat.Completions.ChatCompletionContentPartText | OpenAI.Chat.Completions.ChatCompletionContentPartImage)[] = [{ type: 'text', text: textPromptContent }];
+              
+              imagesForNextTurn.forEach(image => {
+                userPromptContent.push({
+                  type: 'image_url',
+                  image_url: { url: `data:${image.mimeType};base64,${image.data}` }
+                });
+              });
+              
+              history.push({ role: 'user', content: userPromptContent });
+              const stream = await openai.chat.completions.create({ model: 'gpt-4o', messages: history, stream: true }, { signal });
+              
+              for await (const chunk of stream) {
+                if (signal.aborted) break;
+                fullResponseText += chunk.choices[0]?.delta?.content || '';
+                const conversationalPart = fullResponseText.split("[CODE_CHANGES]")[0];
                 const isExpectingCodeChanges = fullResponseText.includes("[CODE_CHANGES]");
-                const streamedChanges = parseStreamedCodeChanges(fullResponseText)
+                const streamedChanges = parseStreamedCodeChanges(fullResponseText);
                 setMessages((prev) => prev.map((m) => m.id === aiMessageId ? { ...m, text: conversationalPart, codeChanges: streamedChanges ?? m.codeChanges, isExpectingCodeChanges } : m));
+              }
+            } else { // Gemini or Chat Mode or Agent Mode
+              const ai = new GoogleGenAI({ apiKey: process.env.API_KEY! })
+              const chatHistory = buildGeminiHistory(messages)
+              
+              const promptParts: Part[] = imagesForNextTurn.map(image => ({
+                inlineData: { mimeType: image.mimeType, data: image.data }
+              }));
+              promptParts.unshift({ text: textPromptContent });
+
+              const chat = ai.chats.create({ model: 'gemini-2.5-flash', config: { systemInstruction }, history: chatHistory });
+              const stream = await chat.sendMessageStream({ message: promptParts });
+              
+              for await (const chunk of stream) {
+                if (signal.aborted) break;
+                fullResponseText += chunk.text
+                if (isChatMode) {
+                    setMessages((prev) => prev.map((m) => m.id === aiMessageId ? { ...m, text: fullResponseText } : m));
+                } else {
+                    const conversationalPart = fullResponseText.split("[CODE_CHANGES]")[0]
+                    const isExpectingCodeChanges = fullResponseText.includes("[CODE_CHANGES]");
+                    const streamedChanges = parseStreamedCodeChanges(fullResponseText)
+                    setMessages((prev) => prev.map((m) => m.id === aiMessageId ? { ...m, text: conversationalPart, codeChanges: streamedChanges ?? m.codeChanges, isExpectingCodeChanges } : m));
+                }
+              }
             }
-          }
-        }
+        })();
+
+        await Promise.race([streamPromise, timeoutPromise]);
       } catch(error) {
+          if (error instanceof Error && error.name === 'AbortError') {
+              stopGeneration();
+          }
           const userFriendlyError = getFriendlyErrorMessage(error, 'api');
           console.error(`AI streaming error:`, error)
           setMessages((prev) => prev.map((m) => m.id === aiMessageId ? { ...m, isStreaming: false, text: '', error: userFriendlyError } : m));
@@ -632,8 +698,8 @@ export const useChat = (
           return;
       }
 
-      if (stopGenerationRef.current) {
-        console.log("Generation stopped by user.")
+      if (signal.aborted) {
+        console.log("Generation stopped by user or timed out.")
       }
       
       if (isChatMode) {
@@ -645,10 +711,15 @@ export const useChat = (
           applyCodeChanges(finalChanges, setFileSystem, lastUploadedImageRef.current, clearLastUploadedImage);
         }
 
+        const agentHaltToken = "[EXECUTION_HALTED_FOR_SCREENSHOT_ANALYSIS]";
+        const shouldAgentHalt = currentIsAgentRunning && fullResponseText.includes(agentHaltToken);
+
         setMessages((prev) =>
           prev.map((m) => {
             if (m.id === aiMessageId) {
-              let finalConversationalText = fullResponseText.replace(/\[CODE_CHANGES\][\s\S]*?\[CODE_CHANGES_END\]/g, "").trim()
+              let finalConversationalText = fullResponseText.replace(/\[CODE_CHANGES\][\s\S]*?\[CODE_CHANGES_END\]/g, "").trim();
+              finalConversationalText = finalConversationalText.replace(agentHaltToken, "").trim();
+
               if (!finalConversationalText && finalChanges.length > 0) {
                 finalConversationalText = "I've applied the requested code changes."
               }
@@ -666,6 +737,12 @@ export const useChat = (
             return m
           }),
         )
+
+        if (shouldAgentHalt) {
+          onAgentStepComplete();
+        } else if (currentIsAgentRunning) {
+          setIsAgentRunning(false); // Agent finished its plan
+        }
       }
 
       if (userMessage.imageUrls) {
@@ -673,7 +750,7 @@ export const useChat = (
       }
       setAiStatus("idle")
     },
-    [fileSystem, setFileSystem, messages, setMessages, clearLastUploadedImage, operationMode, openAIAPIKey, onOpenSettings, selectedSelectors, setSelectedSelectors],
+    [fileSystem, setFileSystem, messages, setMessages, clearLastUploadedImage, operationMode, openAIAPIKey, onOpenSettings, selectedSelectors, setSelectedSelectors, isAgentRunning, setIsAgentRunning, onAgentStepComplete],
   )
 
   return { messages, setMessages, sendMessage, aiStatus, stopGeneration }
