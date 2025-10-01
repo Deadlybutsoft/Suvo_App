@@ -51,7 +51,6 @@ export const SandpackPreviewWrapper: React.FC<SandpackPreviewWrapperProps> = ({
       theme={nightOwl}
       options={{
         activeFile: 'src/App.tsx',
-        entry: 'src/main.tsx',
         autorun: true,
         // This tells Sandpack to not automatically reload on file changes,
         // we control it with the `refreshKey`.
