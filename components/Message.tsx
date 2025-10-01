@@ -1,14 +1,45 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Message as MessageType, FileChange, FileSystem } from '../types';
 import { SparklesIcon, ChevronDownIcon, SpinnerIcon, ArrowLeftIcon, ExclamationTriangleIcon, SunSpinnerIcon, FileIcon, PhotoIcon } from './icons';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 
-const TypingIndicator: React.FC = () => (
-    <div className="flex items-center justify-start gap-1.5 pl-2 py-3">
-        <SunSpinnerIcon className="w-8 h-8 text-zinc-400" />
-    </div>
-);
+const CALMING_MESSAGES = [
+    "Analyzing your request...",
+    "Drafting a plan...",
+    "Consulting my digital muse...",
+    "Building the scaffolding...",
+    "Just a moment, laying the foundation.",
+    "Warming up the circuits...",
+    "Thinking...",
+    "Reviewing the existing code...",
+    "Formulating a strategy...",
+];
+
+const ThinkingIndicator: React.FC = () => {
+    const [message, setMessage] = useState(CALMING_MESSAGES[0]);
+
+    useEffect(() => {
+        // Start with a random message
+        setMessage(CALMING_MESSAGES[Math.floor(Math.random() * CALMING_MESSAGES.length)]);
+
+        const interval = setInterval(() => {
+            setMessage(prevMessage => {
+                const otherMessages = CALMING_MESSAGES.filter(m => m !== prevMessage);
+                return otherMessages[Math.floor(Math.random() * otherMessages.length)];
+            });
+        }, 2500); // Change message every 2.5 seconds
+
+        return () => clearInterval(interval);
+    }, []);
+
+    return (
+        <div className="flex items-center justify-start gap-3 p-2">
+            <SunSpinnerIcon className="w-8 h-8 text-zinc-400" />
+            <span className="text-zinc-400 font-medium">{message}</span>
+        </div>
+    );
+};
 
 const getOperationText = (operation: FileChange['operation']) => {
     switch (operation) {
@@ -82,47 +113,53 @@ const CodeVersionBlock: React.FC<{
     );
 };
 
-const CodeVersionBlockSkeleton: React.FC = () => (
-    <div className="mt-4 border border-zinc-600 bg-zinc-900 rounded-lg overflow-hidden animate-pulse">
-        <div className="p-3 flex items-center justify-between">
-            <div className="flex items-center gap-3">
-                <div className="w-5 h-5 bg-zinc-700 rounded-md"></div>
-                <div className="h-5 w-24 bg-zinc-700 rounded-md"></div>
+const CODE_GENERATION_MESSAGES = [
+    "Generating code changes...",
+    "Writing new files...",
+    "Reviewing the edits...",
+    "Preparing the next version...",
+    "Finalizing the code block...",
+];
+
+const CodeVersionBlockSkeleton: React.FC = () => {
+    const [message, setMessage] = useState(CODE_GENERATION_MESSAGES[0]);
+
+    useEffect(() => {
+        const interval = setInterval(() => {
+            setMessage(prev => {
+                const currentIndex = CODE_GENERATION_MESSAGES.indexOf(prev);
+                const nextIndex = (currentIndex + 1) % CODE_GENERATION_MESSAGES.length;
+                return CODE_GENERATION_MESSAGES[nextIndex];
+            });
+        }, 2500);
+        return () => clearInterval(interval);
+    }, []);
+
+    return (
+        <div className="mt-4 border border-zinc-600 bg-zinc-900 rounded-lg overflow-hidden">
+            <div className="p-3 flex items-center gap-3">
+                <SpinnerIcon className="w-5 h-5 text-zinc-400" />
+                <h4 className="font-semibold text-white truncate">{message}</h4>
+            </div>
+            <div className="border-t border-zinc-600 p-3 bg-black/20 animate-pulse">
+                <div className="space-y-3">
+                    <div className="flex items-center gap-3">
+                        <div className="w-4 h-4 bg-zinc-700 rounded-md flex-shrink-0"></div>
+                        <div className="h-4 w-32 bg-zinc-700 rounded-md"></div>
+                    </div>
+                    <div className="flex items-center gap-3">
+                        <div className="w-4 h-4 bg-zinc-700 rounded-md flex-shrink-0"></div>
+                        <div className="h-4 w-40 bg-zinc-700 rounded-md"></div>
+                    </div>
+                     <div className="flex items-center gap-3">
+                        <div className="w-4 h-4 bg-zinc-700 rounded-md flex-shrink-0"></div>
+                        <div className="h-4 w-24 bg-zinc-700 rounded-md"></div>
+                    </div>
+                </div>
             </div>
         </div>
-        <div className="border-t border-zinc-600 p-2 bg-black/20">
-            <div className="divide-y divide-zinc-700/50">
-                <div className="py-2 px-1">
-                    <div className="flex items-center justify-between gap-3">
-                        <div className="flex items-center gap-3 min-w-0">
-                            <div className="w-4 h-4 bg-zinc-700 rounded-md flex-shrink-0"></div>
-                            <div className="h-4 w-32 bg-zinc-700 rounded-md"></div>
-                        </div>
-                        <div className="h-4 w-16 bg-zinc-700 rounded-md flex-shrink-0"></div>
-                    </div>
-                </div>
-                <div className="py-2 px-1">
-                    <div className="flex items-center justify-between gap-3">
-                        <div className="flex items-center gap-3 min-w-0">
-                            <div className="w-4 h-4 bg-zinc-700 rounded-md flex-shrink-0"></div>
-                            <div className="h-4 w-40 bg-zinc-700 rounded-md"></div>
-                        </div>
-                        <div className="h-4 w-12 bg-zinc-700 rounded-md flex-shrink-0"></div>
-                    </div>
-                </div>
-                 <div className="py-2 px-1">
-                    <div className="flex items-center justify-between gap-3">
-                        <div className="flex items-center gap-3 min-w-0">
-                            <div className="w-4 h-4 bg-zinc-700 rounded-md flex-shrink-0"></div>
-                            <div className="h-4 w-24 bg-zinc-700 rounded-md"></div>
-                        </div>
-                        <div className="h-4 w-20 bg-zinc-700 rounded-md flex-shrink-0"></div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-);
+    );
+};
 
 
 const UserMessage: React.FC<{ message: MessageType }> = ({ message }) => {
@@ -147,7 +184,7 @@ const UserMessage: React.FC<{ message: MessageType }> = ({ message }) => {
 
 const AiMessage: React.FC<{ message: MessageType, onRestoreFileSystem: (fs: FileSystem) => void; }> = ({ message, onRestoreFileSystem }) => {
     if (message.isStreaming && !message.text && (!message.codeChanges || message.codeChanges.length === 0) && !message.isExpectingCodeChanges) {
-        return <TypingIndicator />;
+        return <ThinkingIndicator />;
     }
 
     const handleRestore = () => {

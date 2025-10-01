@@ -10,6 +10,8 @@ interface CreatorKitProps {
   onAddToPrompt: (text: string) => void;
   onAddImages: (files: File[]) => void;
   onClose: () => void;
+  openAIAPIKey: string | null;
+  onOpenSettings: () => void;
 }
 
 type KitTab = 'color' | 'icon' | 'font' | 'image-create';
@@ -21,7 +23,7 @@ const TOOLS: { id: KitTab; label: string; icon: React.FC<{className?: string}> }
     { id: 'image-create', label: 'Create Image', icon: PhotoIcon },
 ];
 
-export const CreatorKit: React.FC<CreatorKitProps> = ({ onAddToPrompt, onAddImages, onClose }) => {
+export const CreatorKit: React.FC<CreatorKitProps> = ({ onAddToPrompt, onAddImages, onClose, openAIAPIKey, onOpenSettings }) => {
     const [activeTool, setActiveTool] = useState<KitTab | null>(null);
 
     const activeToolDetails = TOOLS.find(t => t.id === activeTool);
@@ -53,7 +55,7 @@ export const CreatorKit: React.FC<CreatorKitProps> = ({ onAddToPrompt, onAddImag
             case 'color': return <ColorPicker onSelectColor={(color) => { onAddToPrompt(color); onClose(); }} />;
             case 'icon': return <IconPicker onSelectIcon={(svg) => { onAddToPrompt(`Use this icon: ${svg}`); onClose(); }} />;
             case 'font': return <FontPicker onSelectFont={(font) => { onAddToPrompt(`Use the font '${font}'.`); onClose(); }} />;
-            case 'image-create': return <ImageCreator onSelectImages={(files) => { onAddImages(files); onClose(); }} />;
+            case 'image-create': return <ImageCreator onSelectImages={(files) => { onAddImages(files); onClose(); }} openAIAPIKey={openAIAPIKey} onOpenSettings={onOpenSettings} />;
             default: return null;
         }
     }

@@ -124,6 +124,8 @@ export const ChatInput: React.FC<ChatInputProps> = ({
                 onAddToPrompt={(text) => setPrompt(p => p ? `${p}\n${text}`: text)}
                 onAddImages={handleAddImagesFromKit}
                 onClose={() => setCreatorKitOpen(false)}
+                openAIAPIKey={openAIAPIKey}
+                onOpenSettings={onOpenSettings}
             />
         )}
       </div>
