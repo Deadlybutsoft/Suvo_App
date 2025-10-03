@@ -411,17 +411,15 @@ const Workspace: React.FC = () => {
 
   const handleScreenshotTaken = useCallback(async (dataUrl: string) => {
     try {
-      const file = await dataURLtoFile(dataUrl, `snapshot-${Date.now()}.png`);
-      if (isAgentRunning) {
-        // If agent is running, send the screenshot directly to the agent
-        sendMessage(
-            "Here is a screenshot of the result of your last action. Please analyze it for correctness against your plan, then proceed to the next step or make corrections if needed.",
-            [file]
-        );
-      } else {
-        // Otherwise, attach it for the user to send
-        setImageToAttach(file);
-      }
+        const file = await dataURLtoFile(dataUrl, `snapshot-${Date.now()}.png`);
+        if (isAgentRunning) {
+            // If agent is running, send the screenshot directly to the agent for analysis.
+            const analysisPrompt = "Here is a screenshot of the application after your recent changes. Please analyze it for any visual bugs, design flaws, or inconsistencies with the original request. If you find any problems, please generate the code changes to fix them. If everything looks correct and the task is complete, please respond with the exact phrase: 'The implementation looks correct.' and nothing else.";
+            sendMessage(analysisPrompt, [file]);
+        } else {
+            // Otherwise, attach it for the user to send with their next prompt.
+            setImageToAttach(file);
+        }
     } catch (error) {
         console.error("Failed to convert snapshot to file:", error);
     }

@@ -195,30 +195,6 @@ const AI_CHAT_MODE_SYSTEM_PROMPT = `You are "Suvo," an AI expert specializing in
 Your role is to be a helpful conversational partner. Discuss design principles, implementation strategies, modern web development practices, and answer any questions the user has about their project.
 **IMPORTANT:** In this mode, you MUST NOT write or edit any code. Your responses should be purely conversational text. Do not provide code snippets, and absolutely DO NOT use the [CODE_CHANGES] block format. Your goal is to guide and inform, not to code.`
 
-const AI_AGENT_MODE_SYSTEM_PROMPT = `You are "Suvo," an expert AI agent developer. Your goal is to build and modify web applications based on user requests. You operate in a step-by-step, iterative loop.
-
-### AGENT WORKFLOW:
-
-1.  **Analyze & Plan**: When you receive a task, first analyze the request and the current file system. Create a detailed, step-by-step plan to achieve the user's goal. Announce this plan in your conversational response.
-2.  **Execute Step 1**: Implement **ONLY the first step** of your plan. This may involve creating, updating, or deleting one or more files. Generate the code changes in the required JSON format.
-3.  **Halt for Feedback**: After providing the code for the current step, you **MUST** end your entire response with the special token: \`[EXECUTION_HALTED_FOR_SCREENSHOT_ANALYSIS]\`. This signals that you have completed a step and are now waiting for visual feedback.
-4.  **Receive & Analyze Screenshot**: The system will automatically apply your code changes, take a screenshot of the web preview, and send it back to you with the instruction to continue. Your next task is to **critically analyze this screenshot**.
-    *   Does the UI match what you intended to build in the previous step?
-    *   Are there any visual bugs, layout issues, or styling errors?
-    *   Does it align with your overall plan?
-5.  **Correct or Continue**:
-    *   **If corrections are needed**: Announce what you're fixing, then generate the necessary code changes to fix the issue. Then, halt again using the token \`[EXECUTION_HALTED_FOR_SCREENSHOT_ANALYSIS]\`.
-    *   **If the step was successful**: Announce that the previous step was successful and that you are now proceeding to the **next step** of your original plan. Execute that next step, generate the code, and halt again using the token.
-6.  **Repeat**: Continue this cycle of executing a step, halting, analyzing the screenshot, and correcting or continuing until your entire plan is complete.
-7.  **Completion**: Once all steps are finished and you've verified the final result, state that the task is complete. **DO NOT** use the halt token in your final message.
-
-**CRITICAL INSTRUCTIONS**:
-*   **One Step at a Time**: Never execute more than one step of your plan at once.
-*   **Always Halt**: You must use the \`[EXECUTION_HALTED_FOR_SCREENSHOT_ANALYSIS]\` token at the end of every response except the final one. Failure to do so will break your execution loop.
-*   **Follow Core Directives**: You must still follow all rules from your primary system prompt regarding file structure, design languages, code quality, and response format.
-*   **Be Autonomous**: Take initiative. If a user's request is vague, make reasonable, expert assumptions to create a complete, functional, and beautiful result. If you see a problem in the screenshot, fix it proactively.
-`
-
 const convertImageToBase64 = (imageFile: File): Promise<{ data: string; mimeType: string }> => {
   return new Promise((resolve, reject) => {
     const reader = new FileReader()
@@ -559,7 +535,7 @@ export const useChat = (
 
       const isChatMode = operationMode === 'chat';
       const isAgentMode = operationMode === 'agent';
-      const currentIsAgentRunning = isAgentRunning || isAgentMode;
+      const isEffectivelyAgent = isAgentMode || isAgentRunning;
 
       // Determine model and system prompt
       let modelToUse = operationMode;
@@ -567,9 +543,6 @@ export const useChat = (
       if (isChatMode) {
           modelToUse = 'gemini-2.5-flash';
           systemInstruction = AI_CHAT_MODE_SYSTEM_PROMPT;
-      } else if (currentIsAgentRunning) {
-          modelToUse = 'gemini-2.5-flash'; // Agent mode uses Gemini for now
-          systemInstruction = AI_AGENT_MODE_SYSTEM_PROMPT;
       }
 
       if (modelToUse === 'chatgpt-5' && !openAIAPIKey) {
@@ -615,7 +588,7 @@ export const useChat = (
       setMessages((prev) => [...prev, userMessage]);
       
       const aiMessageId = (Date.now() + 2).toString()
-      const fileSystemSnapshot = (isChatMode || currentIsAgentRunning) ? null : JSON.parse(JSON.stringify(fileSystem));
+      const fileSystemSnapshot = isChatMode ? null : JSON.parse(JSON.stringify(fileSystem));
       const aiMessagePlaceholder: Message = { id: aiMessageId, role: "ai", text: "", isStreaming: true }
       setMessages((prev) => [...prev, aiMessagePlaceholder])
       setAiStatus("streaming")
@@ -705,20 +678,26 @@ export const useChat = (
       if (isChatMode) {
         setMessages((prev) => prev.map((m) => m.id === aiMessageId ? { ...m, isStreaming: false, text: fullResponseText.trim() } : m));
       } else {
+        const stopPhrase = "the implementation looks correct";
+        let shouldStopAgent = false;
+        if (isEffectivelyAgent && fullResponseText.toLowerCase().includes(stopPhrase)) {
+            shouldStopAgent = true;
+        }
+
         const { changes: finalChanges, error: parseError } = finalParseCodeChanges(fullResponseText)
 
         if (finalChanges.length > 0) {
           applyCodeChanges(finalChanges, setFileSystem, lastUploadedImageRef.current, clearLastUploadedImage);
         }
 
-        const agentHaltToken = "[EXECUTION_HALTED_FOR_SCREENSHOT_ANALYSIS]";
-        const shouldAgentHalt = currentIsAgentRunning && fullResponseText.includes(agentHaltToken);
-
         setMessages((prev) =>
           prev.map((m) => {
             if (m.id === aiMessageId) {
               let finalConversationalText = fullResponseText.replace(/\[CODE_CHANGES\][\s\S]*?\[CODE_CHANGES_END\]/g, "").trim();
-              finalConversationalText = finalConversationalText.replace(agentHaltToken, "").trim();
+              
+              if (shouldStopAgent) {
+                  finalConversationalText = "Agent analysis complete. The implementation looks correct.";
+              }
 
               if (!finalConversationalText && finalChanges.length > 0) {
                 finalConversationalText = "I've applied the requested code changes."
@@ -738,10 +717,10 @@ export const useChat = (
           }),
         )
 
-        if (shouldAgentHalt) {
+        if (shouldStopAgent) {
+          setIsAgentRunning(false);
+        } else if (isEffectivelyAgent && finalChanges.length > 0) {
           onAgentStepComplete();
-        } else if (currentIsAgentRunning) {
-          setIsAgentRunning(false); // Agent finished its plan
         }
       }
 
