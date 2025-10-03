@@ -55,7 +55,7 @@ export type IntegrationType =
 
 export type OperationMode = 'gemini-2.5-flash' | 'chatgpt-5' | 'chat' | 'agent';
 
-export type SettingsTab = 'subscription' | 'memory' | 'api_keys';
+export type SettingsTab = 'account' | 'subscription' | 'memory' | 'api_keys';
 
 // Fix: Centralize and merge global Inkeep type definitions to resolve conflicts.
 declare global {

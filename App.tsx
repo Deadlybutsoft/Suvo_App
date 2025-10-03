@@ -199,6 +199,7 @@ async function dataURLtoFile(dataurl: string, filename: string): Promise<File> {
 }
 
 const Workspace: React.FC = () => {
+  const navigate = useNavigate();
   const [isDrawerOpen, setDrawerOpen] = useState(false)
   const [isApiPanelHidden, setApiPanelHidden] = useState(false)
   const [isSettingsOpen, setSettingsOpen] = useState(false)
@@ -306,6 +307,11 @@ const Workspace: React.FC = () => {
   const toggleApiPanel = useCallback(() => setApiPanelHidden(p => !p), []);
   const handleUpgradeClick = useCallback(() => { setPricingModalOpen(true); setDrawerOpen(false); setSettingsOpen(false); }, []);
   const handleOpenSettings = useCallback((tab: SettingsTab = 'api_keys') => { setInitialSettingsTab(tab); setDrawerOpen(false); setSettingsOpen(true); }, []);
+  
+  const handleSignOut = useCallback(() => {
+    setSettingsOpen(false);
+    navigate('/');
+  }, [navigate]);
 
   const handleClearChat = useCallback(() => {
     if (confirm('Are you sure you want to clear the chat history for this project?')) {
@@ -484,7 +490,7 @@ const Workspace: React.FC = () => {
         <SideDrawer isOpen={isDrawerOpen} onClose={toggleDrawer} onOpenSettings={handleOpenSettings} onUpgradeClick={handleUpgradeClick} projects={projects} activeProjectId={activeProjectId} onCreateNewProject={handleCreateNewProject} onDeleteProject={handleDeleteProject} onRenameProject={handleRenameProject} onSwitchProject={handleSwitchProject} />
         <PricingModal isOpen={isPricingModalOpen} onClose={() => setPricingModalOpen(false)} />
       </div>
-      {isSettingsOpen && <SettingsPage onClose={() => setSettingsOpen(false)} onClearChat={handleClearChat} onUpgradeClick={handleUpgradeClick} openAIAPIKey={openAIAPIKey} onSetOpenAIAPIKey={handleSetOpenAIAPIKey} initialTab={initialSettingsTab} />}
+      {isSettingsOpen && <SettingsPage onSignOut={handleSignOut} onClose={() => setSettingsOpen(false)} onClearChat={handleClearChat} onUpgradeClick={handleUpgradeClick} openAIAPIKey={openAIAPIKey} onSetOpenAIAPIKey={handleSetOpenAIAPIKey} initialTab={initialSettingsTab} />}
       {selectedIntegration && <IntegrationDetailModal integration={selectedIntegration} onClose={() => setSelectedIntegration(null)} onAdd={handleAddIntegration} />}
     </>
   )

@@ -2,8 +2,10 @@ import React, { useState, useEffect } from 'react';
 import { 
     CloseIcon,
     CreditCardIcon,
+    UserCircleIcon,
 } from './icons';
 import { 
+    SettingsAccountIcon,
     SettingsMemoryIcon,
     SettingsApiKeysIcon,
 } from './icons/settings-icons';
@@ -16,6 +18,7 @@ interface SettingsPageProps {
   openAIAPIKey: string | null;
   onSetOpenAIAPIKey: (key: string | null) => void;
   initialTab?: SettingsTab;
+  onSignOut: () => void;
 }
 
 const SettingsHeader: React.FC<{ title: string; description: string }> = ({ title, description }) => (
@@ -41,13 +44,15 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({
   onUpgradeClick,
   openAIAPIKey,
   onSetOpenAIAPIKey,
-  initialTab = 'api_keys',
+  onSignOut,
+  initialTab = 'account',
 }) => {
   const [activeTab, setActiveTab] = useState<SettingsTab>(initialTab);
   const [tempOpenAIKey, setTempOpenAIKey] = useState(openAIAPIKey || '');
   const [isSaved, setIsSaved] = useState(false);
 
   const settingsTabs: { id: SettingsTab; label: string; icon: React.FC<{className?: string}> }[] = [
+    { id: 'account', label: 'Account', icon: SettingsAccountIcon },
     { id: 'subscription', label: 'Subscription', icon: CreditCardIcon },
     { id: 'memory', label: 'Memory', icon: SettingsMemoryIcon },
     { id: 'api_keys', label: 'API Keys', icon: SettingsApiKeysIcon },
@@ -67,6 +72,29 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({
 
   const renderContent = () => {
     switch (activeTab) {
+      case 'account':
+        return (
+            <>
+                <SettingsHeader title="Account" description="Manage your account details and session." />
+                <SettingsRow title="Account Status" description="Your work is not saved in demo mode. Please log in to store your projects.">
+                    <div className="p-6 bg-zinc-950 rounded-lg space-y-4 flex flex-col items-center text-center border border-zinc-800">
+                        <UserCircleIcon className="w-12 h-12 text-zinc-500" />
+                        <div>
+                            <p className="font-semibold text-lg text-white">Demo Account</p>
+                            <p className="text-sm text-zinc-400 mt-1">
+                                You are currently in a temporary session.
+                            </p>
+                        </div>
+                        <button 
+                            onClick={onSignOut}
+                            className="w-full max-w-xs px-4 py-2.5 text-sm font-semibold bg-white hover:bg-zinc-200 text-black rounded-md transition-colors"
+                        >
+                            Login to Store Your Work
+                        </button>
+                    </div>
+                </SettingsRow>
+            </>
+        );
       case 'memory':
         return (
             <>
