@@ -22,6 +22,7 @@ interface ChatPanelProps {
   onTakeSnapshot: () => void;
   imageToAttach: File | null;
   onImageAttached: () => void;
+  onImageSelectedForEditing: (dataUrl: string) => void;
 }
 
 export const ChatPanel: React.FC<ChatPanelProps> = ({ 
@@ -42,6 +43,7 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
     onTakeSnapshot,
     imageToAttach,
     onImageAttached,
+    onImageSelectedForEditing,
 }) => {
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
@@ -89,6 +91,7 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
             onTakeSnapshot={onTakeSnapshot}
             imageToAttach={imageToAttach}
             onImageAttached={onImageAttached}
+            onImageSelectedForEditing={onImageSelectedForEditing}
         />
       </div>
     </div>

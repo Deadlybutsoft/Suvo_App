@@ -18,6 +18,7 @@ interface ChatInputProps {
   onTakeSnapshot: () => void;
   imageToAttach: File | null;
   onImageAttached: () => void;
+  onImageSelectedForEditing: (dataUrl: string) => void;
 }
 
 const fileToUrl = (file: File): Promise<string> => {
@@ -43,6 +44,7 @@ export const ChatInput: React.FC<ChatInputProps> = ({
     onTakeSnapshot,
     imageToAttach,
     onImageAttached,
+    onImageSelectedForEditing,
 }) => {
   const [prompt, setPrompt] = useState('');
   const [images, setImages] = useState<File[]>([]);
@@ -103,11 +105,15 @@ export const ChatInput: React.FC<ChatInputProps> = ({
   }, [imagePreviews]);
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files) {
-      const newFiles = Array.from(e.target.files);
-      const newPreviews = await Promise.all(newFiles.map(fileToUrl));
-      setImages(prev => [...prev, ...newFiles]);
-      setImagePreviews(prev => [...prev, ...newPreviews]);
+    if (e.target.files && e.target.files.length > 0) {
+      const file = e.target.files[0];
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        if (event.target?.result) {
+          onImageSelectedForEditing(event.target.result as string);
+        }
+      };
+      reader.readAsDataURL(file);
     }
     if (e.target) e.target.value = '';
   };
@@ -163,7 +169,6 @@ export const ChatInput: React.FC<ChatInputProps> = ({
         onChange={handleFileChange} 
         className="hidden" 
         accept="image/*"
-        multiple
       />
       
       {selectedSelectors.length > 0 && (

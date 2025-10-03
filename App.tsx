@@ -17,6 +17,7 @@ import { MainDisplayPanel } from "./components/MainDisplayPanel"
 import { IntegrationDetailModal } from "./components/IntegrationDetailModal"
 import { INTEGRATIONS, type Integration } from "./components/integrations"
 import { AskAiPage } from "./components/AskAiPage"
+import { ImageEditorModal } from "./components/ImageEditorModal"
 
 const initialFileSystem: FileSystem = {
   'index.html': {
@@ -219,6 +220,9 @@ const Workspace: React.FC = () => {
   const [imageToAttach, setImageToAttach] = useState<File | null>(null);
   const [isAgentRunning, setIsAgentRunning] = useState(false);
 
+  const [isImageEditorOpen, setIsImageEditorOpen] = useState(false);
+  const [imageForEditing, setImageForEditing] = useState<string | null>(null);
+
   useEffect(() => {
     // This effect ensures that the active file is always valid.
     // It runs when the project changes or its file system is updated.
@@ -409,21 +413,30 @@ const Workspace: React.FC = () => {
     setScreenshotTrigger(p => p + 1);
   }, []);
 
+  const handleImageSelectedForEditing = (dataUrl: string) => {
+    setImageForEditing(dataUrl);
+    setIsImageEditorOpen(true);
+  };
+
   const handleScreenshotTaken = useCallback(async (dataUrl: string) => {
     try {
-        const file = await dataURLtoFile(dataUrl, `snapshot-${Date.now()}.png`);
         if (isAgentRunning) {
-            // If agent is running, send the screenshot directly to the agent for analysis.
+            const file = await dataURLtoFile(dataUrl, `snapshot-${Date.now()}.png`);
             const analysisPrompt = "Here is a screenshot of the application after your recent changes. Please analyze it for any visual bugs, design flaws, or inconsistencies with the original request. If you find any problems, please generate the code changes to fix them. If everything looks correct and the task is complete, please respond with the exact phrase: 'The implementation looks correct.' and nothing else.";
             sendMessage(analysisPrompt, [file]);
         } else {
-            // Otherwise, attach it for the user to send with their next prompt.
-            setImageToAttach(file);
+            handleImageSelectedForEditing(dataUrl);
         }
     } catch (error) {
-        console.error("Failed to convert snapshot to file:", error);
+        console.error("Failed to process snapshot:", error);
     }
   }, [isAgentRunning, sendMessage]);
+
+  const handleAttachEditedImage = useCallback((file: File) => {
+    setImageToAttach(file);
+    setIsImageEditorOpen(false);
+    setImageForEditing(null);
+  }, []);
 
   const handleImageAttached = useCallback(() => {
     setImageToAttach(null);
@@ -461,6 +474,7 @@ const Workspace: React.FC = () => {
                   onTakeSnapshot={handleTakeSnapshot}
                   imageToAttach={imageToAttach}
                   onImageAttached={handleImageAttached}
+                  onImageSelectedForEditing={handleImageSelectedForEditing}
                 />
                 <MainDisplayPanel 
                   fileSystem={activeProject.fileSystem} 
@@ -490,6 +504,12 @@ const Workspace: React.FC = () => {
       </div>
       {isSettingsOpen && <SettingsPage onSignOut={handleSignOut} onClose={() => setSettingsOpen(false)} onClearChat={handleClearChat} onUpgradeClick={handleUpgradeClick} openAIAPIKey={openAIAPIKey} onSetOpenAIAPIKey={handleSetOpenAIAPIKey} initialTab={initialSettingsTab} />}
       {selectedIntegration && <IntegrationDetailModal integration={selectedIntegration} onClose={() => setSelectedIntegration(null)} onAdd={handleAddIntegration} />}
+      <ImageEditorModal 
+        isOpen={isImageEditorOpen}
+        onClose={() => setIsImageEditorOpen(false)}
+        imageDataUrl={imageForEditing}
+        onAttach={handleAttachEditedImage}
+      />
     </>
   )
 }
