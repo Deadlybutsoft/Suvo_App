@@ -491,7 +491,8 @@ export const useChat = (
         const messageContent = msg.text;
         if (messageContent) {
            if (msg.role === "user") {
-              if (msg.imageUrls) return; // Skip user messages with images, they are handled separately
+              // The text from messages with images is crucial context.
+              // The image data itself is handled separately for the current turn.
               history.push({ role: "user", content: messageContent });
            } else {
               history.push({ role: "assistant", content: messageContent });
@@ -506,8 +507,8 @@ export const useChat = (
     const history: Content[] = []
     currentMessages.forEach((msg) => {
       if (!msg.isStreaming && !msg.error && (msg.role === "user" || msg.role === "ai")) {
-        if (msg.role === "user" && msg.imageUrls) return
-
+        // The text from messages with images is crucial context.
+        // The image data itself is handled separately for the current turn.
         const messageText = msg.text
 
         if (messageText) {
