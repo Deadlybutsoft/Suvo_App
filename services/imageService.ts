@@ -9,7 +9,7 @@ export const generateImage = async (
     prompt: string, 
     options: GenerateImageOptions
 ): Promise<{ mimeType: string; data: string }[]> => {
-    const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY! });
+    const ai = new GoogleGenAI({ apiKey: 'AIzaSyB1HO26iQJFOEh4LT-HrPW0HtjIwFae4VU' });
     
     try {
         const response = await ai.models.generateImages({
