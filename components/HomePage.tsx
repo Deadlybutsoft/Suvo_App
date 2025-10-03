@@ -125,12 +125,6 @@ export const HomePage_Component: React.FC<HomePageProps> = ({ onLaunchWorkspace 
         <div className="flex-1 flex flex-col overflow-y-auto relative">
             {/* Main Content */}
             <main className="relative flex-grow flex flex-col items-center justify-center text-center w-full max-w-4xl mx-auto z-10 px-4 pt-10 pb-8">
-              <button 
-                onClick={() => onLaunchWorkspace()} 
-                className="mb-8 px-4 py-2 bg-transparent border border-yellow-400 text-white rounded-md hover:bg-yellow-400/20 transition-colors font-semibold text-sm"
-              >
-                DEV MODE: Launch Workspace
-              </button>
               <h1 className="text-5xl sm:text-6xl md:text-7xl font-extrabold tracking-tighter text-white">
                 Your Vision, Instantly Real.
               </h1>

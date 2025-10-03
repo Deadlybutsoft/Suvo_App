@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { CloseIcon, GoogleIcon, CursorArrowIcon } from './icons';
+import { CloseIcon, CursorArrowIcon } from './icons';
 
 interface AuthPageProps {
   onClose: () => void;
@@ -20,6 +20,8 @@ const SocialButton: React.FC<{ onClick: () => void; icon: React.FC<{className?: 
 
 export const AuthPage: React.FC<AuthPageProps> = ({ onClose, onTryDemo }) => {
   const [isVisible, setIsVisible] = useState(false);
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
 
   useEffect(() => {
     setIsVisible(true);
@@ -30,8 +32,9 @@ export const AuthPage: React.FC<AuthPageProps> = ({ onClose, onTryDemo }) => {
     setTimeout(onClose, 300);
   };
   
-  const handleGoogleLogin = () => {
-    alert("Google Login is coming soon!");
+  const handleEmailLogin = (e: React.FormEvent) => {
+    e.preventDefault();
+    alert("Email Login is coming soon!");
   };
 
   return (
@@ -55,11 +58,36 @@ export const AuthPage: React.FC<AuthPageProps> = ({ onClose, onTryDemo }) => {
                 <p className="text-slate-500 dark:text-zinc-400 mb-8">Sign in to continue or try the demo.</p>
 
                 <div className="space-y-4">
-                    <SocialButton onClick={handleGoogleLogin} icon={GoogleIcon}>
-                        Sign in with Google
-                    </SocialButton>
+                    <form onSubmit={handleEmailLogin} className="space-y-4">
+                        <div>
+                            <input
+                                type="email"
+                                placeholder="Enter your email"
+                                value={email}
+                                onChange={(e) => setEmail(e.target.value)}
+                                className="w-full p-3 bg-zinc-900 border border-zinc-700 rounded-md text-white placeholder:text-zinc-500 focus:ring-1 focus:ring-white outline-none transition"
+                                required
+                            />
+                        </div>
+                        <div>
+                            <input
+                                type="password"
+                                placeholder="Password"
+                                value={password}
+                                onChange={(e) => setPassword(e.target.value)}
+                                className="w-full p-3 bg-zinc-900 border border-zinc-700 rounded-md text-white placeholder:text-zinc-500 focus:ring-1 focus:ring-white outline-none transition"
+                                required
+                            />
+                        </div>
+                        <button
+                            type="submit"
+                            className="w-full flex items-center justify-center gap-3 p-3 font-semibold text-black bg-white rounded-md hover:bg-zinc-200 transition-colors"
+                        >
+                            Sign In
+                        </button>
+                    </form>
 
-                    <div className="relative my-6">
+                    <div className="relative my-2">
                         <div className="absolute inset-0 flex items-center" aria-hidden="true">
                             <div className="w-full border-t border-zinc-700" />
                         </div>
